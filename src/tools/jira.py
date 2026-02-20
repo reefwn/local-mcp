@@ -45,3 +45,17 @@ async def jira_create_issue(project_key: str, summary: str, issue_type: str = "T
         }
     data = await client.jira_post("/issue", json=body)
     return f"Created {data['key']}: {summary}"
+
+
+@mcp.tool()
+async def jira_add_comment(issue_key: str, comment: str) -> str:
+    """Add a comment to a Jira issue by key (e.g. PROJ-123)."""
+    body = {
+        "body": {
+            "type": "doc",
+            "version": 1,
+            "content": [{"type": "paragraph", "content": [{"type": "text", "text": comment}]}],
+        }
+    }
+    await client.jira_post(f"/issue/{issue_key}/comment", json=body)
+    return f"Comment added to {issue_key}."
