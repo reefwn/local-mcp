@@ -16,6 +16,9 @@ class Config:
     bitbucket_email: str = os.getenv("BITBUCKET_EMAIL", "")
     bitbucket_api_token: str = os.getenv("BITBUCKET_API_TOKEN", "")
     bitbucket_workspace: str = os.getenv("BITBUCKET_WORKSPACE", "")
+    enable_jira: bool = os.getenv("ENABLE_JIRA", "false").lower() == "true"
+    enable_confluence: bool = os.getenv("ENABLE_CONFLUENCE", "false").lower() == "true"
+    enable_bitbucket: bool = os.getenv("ENABLE_BITBUCKET", "false").lower() == "true"
 
     @property
     def jira_base_url(self) -> str:

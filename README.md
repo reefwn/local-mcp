@@ -24,6 +24,14 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
 
    > Each service uses its own API token via Basic Auth (email + token). You can use the same token for all three, or create separate tokens with scoped permissions.
 
+   You can also disable individual services by setting feature flags to `false`:
+
+   | Variable | Default |
+   |----------|---------|
+   | `ENABLE_JIRA` | `false` |
+   | `ENABLE_CONFLUENCE` | `false` |
+   | `ENABLE_BITBUCKET` | `false` |
+
 ## Run locally
 
 ```bash
