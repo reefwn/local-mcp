@@ -39,11 +39,19 @@ pip install -e .
 python -m src.server
 ```
 
+## Run with Docker Compose
+
+```bash
+docker compose up -d        # start in background
+docker compose down          # stop
+docker compose up -d --build # rebuild and start
+```
+
 ## Run with Docker
 
 ```bash
 docker build -t local-mcp .
-docker run -i --env-file .env local-mcp
+docker run -d --rm --name local-mcp-server --env-file .env -p 8080:8080 local-mcp
 ```
 
 ## Tools
