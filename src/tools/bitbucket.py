@@ -58,3 +58,33 @@ async def bitbucket_get_pr(repo_slug: str, pr_id: int) -> dict:
         "destination": data["destination"]["branch"]["name"],
         "description": data.get("description", ""),
     }
+
+
+@mcp.tool()
+async def bitbucket_get_pr_diff(repo_slug: str, pr_id: int) -> str:
+    """Get the full diff of a pull request."""
+    ws = config.bitbucket_workspace
+    return await client.bitbucket_get_text(f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/diff")
+
+
+@mcp.tool()
+async def bitbucket_list_pr_comments(repo_slug: str, pr_id: int) -> str:
+    """List comments on a pull request."""
+    ws = config.bitbucket_workspace
+    data = await client.bitbucket_get(f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/comments")
+    comments = data.get("values", [])
+    return "\n".join(
+        f"[{c['user']['display_name']}] {c['content']['raw']}"
+        for c in comments
+        if c.get("content", {}).get("raw")
+    ) or "No comments."
+
+
+@mcp.tool()
+async def bitbucket_create_pr_comment(repo_slug: str, pr_id: int, content: str) -> dict:
+    """Post a comment on a pull request."""
+    ws = config.bitbucket_workspace
+    return await client.bitbucket_post(
+        f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/comments",
+        json={"content": {"raw": content}},
+    )
