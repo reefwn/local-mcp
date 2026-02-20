@@ -13,12 +13,16 @@ Aggregated MCP server for Atlassian tools — Jira, Confluence, and Bitbucket �
 
    | Variable | How to get it |
    |----------|---------------|
-   | `ATLASSIAN_EMAIL` | The email you use to log into Atlassian |
    | `ATLASSIAN_DOMAIN` | Your domain from the browser URL, e.g. `your-company.atlassian.net` |
-   | `ATLASSIAN_API_TOKEN` | Generate at [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens) — click "Create API token", give it a label, and copy the value |
+   | `JIRA_EMAIL` | Email for Jira access |
+   | `JIRA_API_TOKEN` | Generate at [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens) |
+   | `CONFLUENCE_EMAIL` | Email for Confluence access |
+   | `CONFLUENCE_API_TOKEN` | Generate at [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens) |
+   | `BITBUCKET_EMAIL` | Email for Bitbucket access |
+   | `BITBUCKET_API_TOKEN` | Generate at [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens) |
    | `BITBUCKET_WORKSPACE` | Your workspace slug from the URL `https://bitbucket.org/{workspace-slug}/`, or find it under Workspace Settings → "Workspace ID" |
 
-   > The API token uses Basic Auth (email + token) and works for Jira, Confluence, and Bitbucket Cloud under the same Atlassian account.
+   > Each service uses its own API token via Basic Auth (email + token). You can use the same token for all three, or create separate tokens with scoped permissions.
 
 ## Run locally
 
