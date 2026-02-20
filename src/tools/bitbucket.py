@@ -14,12 +14,28 @@ async def bitbucket_list_repos(limit: int = 10) -> str:
 
 
 @mcp.tool()
-async def bitbucket_list_prs(repo_slug: str, state: str = "OPEN") -> str:
-    """List pull requests for a Bitbucket repository. State: OPEN, MERGED, DECLINED."""
+async def bitbucket_list_prs(
+    repo_slug: str,
+    state: str = "OPEN",
+    target_branch: str | None = None,
+    source_branch: str | None = None,
+    author: str | None = None,
+) -> str:
+    """List pull requests for a Bitbucket repository. State: OPEN, MERGED, DECLINED. Optionally filter by target_branch, source_branch, or author (Atlassian display name or account nickname)."""
     ws = config.bitbucket_workspace
+    params: dict = {"state": state}
+    filters = []
+    if target_branch:
+        filters.append(f'destination.branch.name = "{target_branch}"')
+    if source_branch:
+        filters.append(f'source.branch.name = "{source_branch}"')
+    if author:
+        filters.append(f'author.display_name ~ "{author}"')
+    if filters:
+        params["q"] = " AND ".join(filters)
     data = await client.bitbucket_get(
         f"/repositories/{ws}/{repo_slug}/pullrequests",
-        params={"state": state},
+        params=params,
     )
     prs = data.get("values", [])
     return "\n".join(
