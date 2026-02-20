@@ -1,0 +1,13 @@
+[project]
+name = "local-mcp-server"
+version = "0.1.0"
+description = "Aggregated local MCP server for development tools"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/local_mcp"]
