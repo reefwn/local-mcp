@@ -6,6 +6,8 @@ if config.enable_confluence:
     from src.tools import confluence  # noqa: F401
 if config.enable_bitbucket:
     from src.tools import bitbucket  # noqa: F401
+if config.enable_postgres:
+    from src.tools import postgres  # noqa: F401
 
 
 def main():

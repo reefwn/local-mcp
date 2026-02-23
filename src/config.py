@@ -19,6 +19,8 @@ class Config:
     enable_jira: bool = os.getenv("ENABLE_JIRA", "false").lower() == "true"
     enable_confluence: bool = os.getenv("ENABLE_CONFLUENCE", "false").lower() == "true"
     enable_bitbucket: bool = os.getenv("ENABLE_BITBUCKET", "false").lower() == "true"
+    enable_postgres: bool = os.getenv("ENABLE_POSTGRES", "false").lower() == "true"
+    postgres_url: str = os.getenv("POSTGRES_URL", "")
 
     @property
     def jira_base_url(self) -> str:

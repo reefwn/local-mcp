@@ -22,6 +22,12 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    | `BITBUCKET_API_TOKEN` | Generate at [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens) |
    | `BITBUCKET_WORKSPACE` | Your workspace slug from the URL `https://bitbucket.org/{workspace-slug}/`, or find it under Workspace Settings â†’ "Workspace ID" |
 
+   **PostgreSQL:**
+
+   | Variable | How to get it |
+   |----------|---------------|
+   | `POSTGRES_URL` | Connection string, e.g. `postgresql://user:password@localhost:5432/dbname` |
+
    > Each service uses its own API token via Basic Auth (email + token). You can use the same token for all three, or create separate tokens with scoped permissions.
 
    You can also disable individual services by setting feature flags to `false`:
@@ -31,6 +37,7 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    | `ENABLE_JIRA` | `false` |
    | `ENABLE_CONFLUENCE` | `false` |
    | `ENABLE_BITBUCKET` | `false` |
+   | `ENABLE_POSTGRES` | `false` |
 
 ## Run locally
 
@@ -66,3 +73,7 @@ docker run -d --rm --name local-mcp-server --env-file .env -p 8080:8080 local-mc
 | `bitbucket_list_repos` | List workspace repositories |
 | `bitbucket_list_prs` | List pull requests for a repo |
 | `bitbucket_get_pr` | Get PR details |
+| `pg_query` | Run a read-only SQL query |
+| `pg_list_tables` | List tables in a schema |
+| `pg_describe_table` | Describe columns of a table |
+| `pg_list_indexes` | List indexes on a table |
