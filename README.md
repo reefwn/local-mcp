@@ -36,6 +36,12 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    |----------|---------------|
    | `REDIS_URL` | Connection string, e.g. `redis://localhost:6379/0` |
 
+   **Kafka:**
+
+   | Variable | How to get it |
+   |----------|---------------|
+   | `KAFKA_BOOTSTRAP_SERVERS` | Comma-separated broker addresses, e.g. `localhost:9092` |
+
    > Each service uses its own API token via Basic Auth (email + token). You can use the same token for all three, or create separate tokens with scoped permissions.
 
    You can also enable individual services by setting feature flags to `true`:
@@ -47,6 +53,7 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    | `ENABLE_BITBUCKET` | `false` |
    | `ENABLE_POSTGRES` | `false` |
    | `ENABLE_REDIS` | `false` |
+   | `ENABLE_KAFKA` | `false` |
 
 ## Run locally
 
@@ -90,3 +97,8 @@ docker run -d --rm --name local-mcp-server --env-file .env -p 8080:8080 local-mc
 | `redis_set` | Set a Redis key with optional TTL |
 | `redis_delete` | Delete a Redis key |
 | `redis_keys` | List keys matching a glob pattern |
+| `kafka_list_topics` | List all Kafka topics |
+| `kafka_describe_topic` | Describe a Kafka topic |
+| `kafka_create_topic` | Create a new Kafka topic |
+| `kafka_produce` | Produce a message to a topic |
+| `kafka_consume` | Consume messages from a topic |

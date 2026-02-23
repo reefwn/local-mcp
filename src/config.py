@@ -23,6 +23,8 @@ class Config:
     postgres_url: str = os.getenv("POSTGRES_URL", "")
     enable_redis: bool = os.getenv("ENABLE_REDIS", "false").lower() == "true"
     redis_url: str = os.getenv("REDIS_URL", "")
+    enable_kafka: bool = os.getenv("ENABLE_KAFKA", "false").lower() == "true"
+    kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
 
     @property
     def jira_base_url(self) -> str:
