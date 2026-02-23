@@ -24,6 +24,8 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    | `BITBUCKET_API_TOKEN` | Generate at [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens) |
    | `BITBUCKET_WORKSPACE` | Your workspace slug from the URL `https://bitbucket.org/{workspace-slug}/`, or find it under Workspace Settings â†’ "Workspace ID" |
 
+   > Each service uses its own API token via Basic Auth (email + token). You can use the same token for all three, or create separate tokens with scoped permissions.
+
    **PostgreSQL:**
 
    | Variable | How to get it |
@@ -42,7 +44,13 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    |----------|---------------|
    | `KAFKA_BOOTSTRAP_SERVERS` | Comma-separated broker addresses, e.g. `localhost:9092` |
 
-   > Each service uses its own API token via Basic Auth (email + token). You can use the same token for all three, or create separate tokens with scoped permissions.
+   **Figma:**
+
+   | Variable | How to get it |
+   |----------|---------------|
+   | `FIGMA_API_TOKEN` | Generate at [Figma Settings â†’ Personal access tokens](https://www.figma.com/developers/api#access-tokens) |
+
+   > Figma tools are designed to work without Dev Mode
 
    You can also enable individual services by setting feature flags to `true`:
 
@@ -54,6 +62,7 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    | `ENABLE_POSTGRES` | `false` |
    | `ENABLE_REDIS` | `false` |
    | `ENABLE_KAFKA` | `false` |
+   | `ENABLE_FIGMA` | `false` |
 
 ## Run locally
 
@@ -102,3 +111,8 @@ docker run -d --rm --name local-mcp-server --env-file .env -p 8080:8080 local-mc
 | `kafka_create_topic` | Create a new Kafka topic |
 | `kafka_produce` | Produce a message to a topic |
 | `kafka_consume` | Consume messages from a topic |
+| `figma_get_file` | Get a Figma file's structure and metadata |
+| `figma_get_file_nodes` | Get specific nodes from a Figma file by IDs |
+| `figma_get_images` | Export Figma nodes as images (png, jpg, svg, pdf) |
+| `figma_get_comments` | Get all comments on a Figma file |
+| `figma_post_comment` | Post or reply to a comment on a Figma file |
