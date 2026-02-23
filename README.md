@@ -11,6 +11,8 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
 
 2. Fill in your `.env` values:
 
+   **Atlassian:**
+
    | Variable | How to get it |
    |----------|---------------|
    | `ATLASSIAN_DOMAIN` | Your domain from the browser URL, e.g. `your-company.atlassian.net` |
@@ -28,9 +30,15 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    |----------|---------------|
    | `POSTGRES_URL` | Connection string, e.g. `postgresql://user:password@localhost:5432/dbname` |
 
+   **Redis:**
+
+   | Variable | How to get it |
+   |----------|---------------|
+   | `REDIS_URL` | Connection string, e.g. `redis://localhost:6379/0` |
+
    > Each service uses its own API token via Basic Auth (email + token). You can use the same token for all three, or create separate tokens with scoped permissions.
 
-   You can also disable individual services by setting feature flags to `false`:
+   You can also enable individual services by setting feature flags to `true`:
 
    | Variable | Default |
    |----------|---------|
@@ -38,6 +46,7 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    | `ENABLE_CONFLUENCE` | `false` |
    | `ENABLE_BITBUCKET` | `false` |
    | `ENABLE_POSTGRES` | `false` |
+   | `ENABLE_REDIS` | `false` |
 
 ## Run locally
 
@@ -77,3 +86,7 @@ docker run -d --rm --name local-mcp-server --env-file .env -p 8080:8080 local-mc
 | `pg_list_tables` | List tables in a schema |
 | `pg_describe_table` | Describe columns of a table |
 | `pg_list_indexes` | List indexes on a table |
+| `redis_get` | Get the value of a Redis key |
+| `redis_set` | Set a Redis key with optional TTL |
+| `redis_delete` | Delete a Redis key |
+| `redis_keys` | List keys matching a glob pattern |

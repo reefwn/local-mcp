@@ -21,6 +21,8 @@ class Config:
     enable_bitbucket: bool = os.getenv("ENABLE_BITBUCKET", "false").lower() == "true"
     enable_postgres: bool = os.getenv("ENABLE_POSTGRES", "false").lower() == "true"
     postgres_url: str = os.getenv("POSTGRES_URL", "")
+    enable_redis: bool = os.getenv("ENABLE_REDIS", "false").lower() == "true"
+    redis_url: str = os.getenv("REDIS_URL", "")
 
     @property
     def jira_base_url(self) -> str:

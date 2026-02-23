@@ -8,6 +8,8 @@ if config.enable_bitbucket:
     from src.tools import bitbucket  # noqa: F401
 if config.enable_postgres:
     from src.tools import postgres  # noqa: F401
+if config.enable_redis:
+    from src.tools import redis  # noqa: F401
 
 
 def main():
