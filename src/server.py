@@ -12,6 +12,8 @@ if config.enable_redis:
     from src.tools import redis  # noqa: F401
 if config.enable_kafka:
     from src.tools import kafka  # noqa: F401
+if config.enable_figma:
+    from src.tools import figma  # noqa: F401
 
 
 def main():

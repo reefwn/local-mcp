@@ -25,6 +25,8 @@ class Config:
     redis_url: str = os.getenv("REDIS_URL", "")
     enable_kafka: bool = os.getenv("ENABLE_KAFKA", "false").lower() == "true"
     kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
+    enable_figma: bool = os.getenv("ENABLE_FIGMA", "false").lower() == "true"
+    figma_api_token: str = os.getenv("FIGMA_API_TOKEN", "")
 
     @property
     def jira_base_url(self) -> str:
