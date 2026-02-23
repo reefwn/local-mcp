@@ -11,7 +11,7 @@ class AtlassianClient:
         common = {"headers": {"Accept": "application/json"}, "timeout": 30.0}
         self._jira = httpx.AsyncClient(auth=(config.jira_email, config.jira_api_token), **common)
         self._confluence = httpx.AsyncClient(auth=(config.confluence_email, config.confluence_api_token), **common)
-        self._bitbucket = httpx.AsyncClient(auth=(config.bitbucket_email, config.bitbucket_api_token), **common)
+        self._bitbucket = httpx.AsyncClient(auth=(config.bitbucket_email, config.bitbucket_api_token), follow_redirects=True, **common)
 
     async def jira_get(self, path: str, params: dict | None = None) -> dict:
         r = await self._jira.get(f"{self.config.jira_base_url}{path}", params=params)
