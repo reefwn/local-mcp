@@ -86,6 +86,13 @@ docker build -t local-mcp .
 docker run -d --rm --name local-mcp-server --env-file .env -p 8080:8080 local-mcp
 ```
 
+## Tests
+
+```bash
+pip install -e ".[test]"
+pytest
+```
+
 ## Tools
 
 | Tool | Description |
