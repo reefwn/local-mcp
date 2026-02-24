@@ -81,6 +81,17 @@ async def bitbucket_list_pr_comments(repo_slug: str, pr_id: int) -> str:
 
 
 @mcp.tool()
+async def bitbucket_update_pr_description(repo_slug: str, pr_id: int, description: str) -> str:
+    """Update the description of a Bitbucket pull request."""
+    ws = config.bitbucket_workspace
+    await client.bitbucket_put(
+        f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}",
+        json={"description": description},
+    )
+    return f"PR #{pr_id} description updated."
+
+
+@mcp.tool()
 async def bitbucket_create_pr_comment(repo_slug: str, pr_id: int, content: str) -> dict:
     """Post a comment on a pull request."""
     ws = config.bitbucket_workspace

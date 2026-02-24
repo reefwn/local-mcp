@@ -38,6 +38,11 @@ class AtlassianClient:
         r.raise_for_status()
         return r.text
 
+    async def bitbucket_put(self, path: str, json: dict) -> dict:
+        r = await self._bitbucket.put(f"{self.config.bitbucket_base_url}{path}", json=json)
+        r.raise_for_status()
+        return r.json()
+
     async def bitbucket_post(self, path: str, json: dict) -> dict:
         r = await self._bitbucket.post(f"{self.config.bitbucket_base_url}{path}", json=json)
         r.raise_for_status()

@@ -105,6 +105,10 @@ pytest
 | `bitbucket_list_repos` | List workspace repositories |
 | `bitbucket_list_prs` | List pull requests for a repo |
 | `bitbucket_get_pr` | Get PR details |
+| `bitbucket_get_pr_diff` | Get the full diff of a pull request |
+| `bitbucket_list_pr_comments` | List comments on a pull request |
+| `bitbucket_update_pr_description` | Update the description of a PR |
+| `bitbucket_create_pr_comment` | Post a comment on a pull request |
 | `pg_query` | Run a read-only SQL query |
 | `pg_list_tables` | List tables in a schema |
 | `pg_describe_table` | Describe columns of a table |
