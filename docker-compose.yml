@@ -4,5 +4,5 @@ services:
     container_name: local-mcp-server
     env_file: .env
     ports:
-      - "8080:8080"
+      - "7373:7373"
     restart: unless-stopped
