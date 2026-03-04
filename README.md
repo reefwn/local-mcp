@@ -83,7 +83,7 @@ docker compose up -d --build # rebuild and start
 
 ```bash
 docker build -t local-mcp .
-docker run -d --rm --name local-mcp-server --env-file .env -p 8080:8080 local-mcp
+docker run -d --rm --name local-mcp-server --env-file .env -p 7373:7373 local-mcp
 ```
 
 ## Tests
