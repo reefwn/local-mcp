@@ -197,6 +197,85 @@ async def bitbucket_list_branch_restrictions(repo_slug: str) -> list[dict]:
 
 
 @mcp.tool()
+async def bitbucket_list_pipelines(
+    repo_slug: str,
+    limit: int = 10,
+) -> str:
+    """List recent CI/CD pipelines for a repository. Shows build number, status, branch, and trigger info."""
+    ws = config.bitbucket_workspace
+    data = await client.bitbucket_get(
+        f"/repositories/{ws}/{repo_slug}/pipelines",
+        params={"pagelen": limit, "sort": "-created_on"},
+    )
+    pipelines = data.get("values", [])
+    lines = []
+    for p in pipelines:
+        num = p.get("build_number", "?")
+        state = p.get("state", {})
+        status = state.get("name", "UNKNOWN")
+        result = state.get("result", {}).get("name", "") if status == "COMPLETED" else ""
+        target = p.get("target", {})
+        branch = target.get("ref_name", target.get("selector", {}).get("pattern", "N/A"))
+        created = p.get("created_on", "")[:19]
+        display = f"{status}/{result}" if result else status
+        lines.append(f"[#{num}] {display} | {branch} | {created}")
+    return "\n".join(lines) or "No pipelines found."
+
+
+@mcp.tool()
+async def bitbucket_get_pipeline(repo_slug: str, pipeline_uuid: str) -> dict:
+    """Get details of a specific pipeline by UUID."""
+    ws = config.bitbucket_workspace
+    data = await client.bitbucket_get(f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_uuid}")
+    state = data.get("state", {})
+    return {
+        "uuid": data.get("uuid"),
+        "build_number": data.get("build_number"),
+        "status": state.get("name"),
+        "result": state.get("result", {}).get("name") if state.get("name") == "COMPLETED" else None,
+        "branch": data.get("target", {}).get("ref_name"),
+        "trigger": data.get("trigger", {}).get("name"),
+        "created_on": data.get("created_on"),
+        "completed_on": data.get("completed_on"),
+        "build_seconds_used": data.get("build_seconds_used"),
+    }
+
+
+@mcp.tool()
+async def bitbucket_list_pipeline_steps(repo_slug: str, pipeline_uuid: str) -> str:
+    """List steps for a given pipeline. Shows step name, status, and duration."""
+    ws = config.bitbucket_workspace
+    data = await client.bitbucket_get(
+        f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_uuid}/steps",
+    )
+    steps = data.get("values", [])
+    lines = []
+    for s in steps:
+        uuid = s.get("uuid", "")
+        name = s.get("name", "unnamed")
+        state = s.get("state", {})
+        status = state.get("name", "UNKNOWN")
+        result = state.get("result", {}).get("name", "") if status == "COMPLETED" else ""
+        started = s.get("started_on", "")[:19]
+        display = f"{status}/{result}" if result else status
+        lines.append(f"[{uuid}] {name} | {display} | started: {started}")
+    return "\n".join(lines) or "No steps found."
+
+
+@mcp.tool()
+async def bitbucket_get_pipeline_step_log(
+    repo_slug: str,
+    pipeline_uuid: str,
+    step_uuid: str,
+) -> str:
+    """Get the log output for a specific step of a pipeline."""
+    ws = config.bitbucket_workspace
+    return await client.bitbucket_get_text(
+        f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_uuid}/steps/{step_uuid}/log",
+    )
+
+
+@mcp.tool()
 async def bitbucket_create_branch_restriction(
     repo_slug: str,
     kind: str,

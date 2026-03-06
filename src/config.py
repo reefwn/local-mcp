@@ -8,7 +8,7 @@ load_dotenv()
 
 @dataclass
 class Config:
-    domain: str = os.getenv("ATLASSIAN_DOMAIN", "")
+    atlassian_domain: str = os.getenv("ATLASSIAN_DOMAIN", "")
     jira_email: str = os.getenv("JIRA_EMAIL", "")
     jira_api_token: str = os.getenv("JIRA_API_TOKEN", "")
     confluence_email: str = os.getenv("CONFLUENCE_EMAIL", "")
@@ -30,11 +30,11 @@ class Config:
 
     @property
     def jira_base_url(self) -> str:
-        return f"https://{self.domain}/rest/api/3"
+        return f"https://{self.atlassian_domain}/rest/api/3"
 
     @property
     def confluence_base_url(self) -> str:
-        return f"https://{self.domain}/wiki/api/v2"
+        return f"https://{self.atlassian_domain}/wiki/api/v2"
 
     @property
     def bitbucket_base_url(self) -> str:

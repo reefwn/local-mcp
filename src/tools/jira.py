@@ -4,7 +4,7 @@ from src.tools import client, mcp
 @mcp.tool()
 async def jira_search(jql: str, max_results: int = 10) -> str:
     """Search Jira issues using JQL query."""
-    data = await client.jira_get("/search", params={"jql": jql, "maxResults": max_results})
+    data = await client.jira_post("/search/jql", json={"jql": jql, "maxResults": max_results, "fields": ["summary", "status"]})
     issues = data.get("issues", [])
     return "\n".join(
         f"[{i['key']}] {i['fields']['summary']} (Status: {i['fields']['status']['name']})"

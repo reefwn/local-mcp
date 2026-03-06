@@ -7,7 +7,7 @@ from src.clients import AtlassianClient
 @pytest.fixture
 def mock_config():
     return Config(
-        domain="test.atlassian.net",
+        atlassian_domain="test.atlassian.net",
         jira_email="test@example.com",
         jira_api_token="test-token",
         confluence_email="test@example.com",
