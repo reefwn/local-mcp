@@ -1,9 +1,6 @@
 import json
 
-from src.clients.kafka import KafkaClient
-from src.tools import config, mcp
-
-kf = KafkaClient(config.kafka_bootstrap_servers)
+from src.tools import config, kafka_client as kf, mcp
 
 
 @mcp.tool()

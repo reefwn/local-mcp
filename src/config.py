@@ -27,6 +27,9 @@ class Config:
     kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
     enable_figma: bool = os.getenv("ENABLE_FIGMA", "false").lower() == "true"
     figma_api_token: str = os.getenv("FIGMA_API_TOKEN", "")
+    enable_obsidian: bool = os.getenv("ENABLE_OBSIDIAN", "false").lower() == "true"
+    obsidian_api_key: str = os.getenv("OBSIDIAN_API_KEY", "")
+    obsidian_url: str = os.getenv("OBSIDIAN_URL", "https://127.0.0.1:27124")
 
     @property
     def jira_base_url(self) -> str:

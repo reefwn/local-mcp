@@ -1,9 +1,6 @@
 import json
 
-from src.clients.postgres import PostgresClient
-from src.tools import config, mcp
-
-pg = PostgresClient(config.postgres_url)
+from src.tools import config, mcp, postgres_client as pg
 
 
 def _serialize(rows: list[dict]) -> str:
