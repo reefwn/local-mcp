@@ -52,6 +52,15 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
 
    > Figma tools are designed to work without Dev Mode
 
+   **Obsidian:**
+
+   | Variable | How to get it |
+   |----------|---------------|
+   | `OBSIDIAN_API_KEY` | Get from Obsidian Local REST API plugin settings |
+   | `OBSIDIAN_URL` | Default: `https://127.0.0.1:27124` |
+
+   > Requires [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin installed in Obsidian
+
    You can also enable individual services by setting feature flags to `true`:
 
    | Variable | Default |
@@ -63,6 +72,7 @@ Aggregated MCP server for Atlassian tools â€” Jira, Confluence, and Bitbucket â€
    | `ENABLE_REDIS` | `false` |
    | `ENABLE_KAFKA` | `false` |
    | `ENABLE_FIGMA` | `false` |
+   | `ENABLE_OBSIDIAN` | `false` |
 
 ## Run locally
 
@@ -127,3 +137,15 @@ pytest
 | `figma_get_images` | Export Figma nodes as images (png, jpg, svg, pdf) |
 | `figma_get_comments` | Get all comments on a Figma file |
 | `figma_post_comment` | Post or reply to a comment on a Figma file |
+| `obsidian_list_files_in_vault` | List all files in vault root |
+| `obsidian_list_files_in_dir` | List files in a specific directory |
+| `obsidian_get_file_contents` | Get content of a file |
+| `obsidian_simple_search` | Simple text search across vault |
+| `obsidian_complex_search` | JsonLogic-based search with glob/regexp |
+| `obsidian_append_content` | Append content to a file |
+| `obsidian_patch_content` | Insert content relative to heading/block/frontmatter |
+| `obsidian_put_content` | Create or update file content |
+| `obsidian_delete_file` | Delete a file or directory |
+| `obsidian_get_periodic_note` | Get current periodic note (daily/weekly/monthly/etc) |
+| `obsidian_get_recent_periodic_notes` | Get recent periodic notes |
+| `obsidian_get_recent_changes` | Get recently modified files |

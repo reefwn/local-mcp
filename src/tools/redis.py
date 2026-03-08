@@ -1,9 +1,6 @@
 import json
 
-from src.clients.redis import RedisClient
-from src.tools import config, mcp
-
-rd = RedisClient(config.redis_url)
+from src.tools import config, mcp, redis_client as rd
 
 
 @mcp.tool()

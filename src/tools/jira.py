@@ -1,4 +1,4 @@
-from src.tools import client, mcp
+from src.tools import atlassian_client as client, config, mcp
 
 
 @mcp.tool()
