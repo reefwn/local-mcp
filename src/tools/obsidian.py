@@ -55,7 +55,11 @@ async def obsidian_patch_content(filepath: str, operation: str, target_type: str
         filepath: Path to the file (relative to vault root)
         operation: Operation to perform (append, prepend, or replace)
         target_type: Type of target to patch (heading, block, or frontmatter)
-        target: Target identifier (heading path, block reference, or frontmatter field)
+        target: Target identifier:
+            - For headings: Use heading text WITHOUT # symbols, separated by :: for nested headings
+              Examples: "My Heading", "Parent Heading::Child Heading", "H1::H2::H3"
+            - For blocks: Use the block reference ID (e.g., "abc123")
+            - For frontmatter: Use the field name (e.g., "tags")
         content: Content to insert
     """
     await client.patch_content(filepath, operation, target_type, target, content)
