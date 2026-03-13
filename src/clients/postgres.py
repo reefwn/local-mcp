@@ -28,12 +28,12 @@ class PostgresClient:
             )
         return self._pools[db]
 
-    async def fetch(self, query: str, *args, database: str | None = None) -> list[dict]:
+    async def fetch(self, database: str | None = None, query: str = "", *args) -> list[dict]:
         pool = await self._get_pool(database)
         rows = await pool.fetch(query, *args)
         return [dict(r) for r in rows]
 
-    async def execute(self, query: str, *args, database: str | None = None) -> str:
+    async def execute(self, database: str | None = None, query: str = "", *args) -> str:
         pool = await self._get_pool(database)
         return await pool.execute(query, *args)
 
