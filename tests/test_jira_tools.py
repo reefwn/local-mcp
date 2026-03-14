@@ -6,7 +6,7 @@ from src.tools.jira import jira_search, jira_get_issue, jira_create_issue, jira_
 @pytest.mark.asyncio
 async def test_jira_search_with_results():
     mock_client = AsyncMock()
-    mock_client.jira_get.return_value = {
+    mock_client.jira_post.return_value = {
         "issues": [
             {"key": "TEST-1", "fields": {"summary": "Issue 1", "status": {"name": "Open"}}},
             {"key": "TEST-2", "fields": {"summary": "Issue 2", "status": {"name": "In Progress"}}},
@@ -15,13 +15,13 @@ async def test_jira_search_with_results():
     with patch("src.tools.jira.client", mock_client):
         result = await jira_search("project = TEST")
     assert result == "[TEST-1] Issue 1 (Status: Open)\n[TEST-2] Issue 2 (Status: In Progress)"
-    mock_client.jira_get.assert_called_once_with("/search", params={"jql": "project = TEST", "maxResults": 10})
+    mock_client.jira_post.assert_called_once_with("/search/jql", json={"jql": "project = TEST", "maxResults": 10, "fields": ["summary", "status"]})
 
 
 @pytest.mark.asyncio
 async def test_jira_search_no_results():
     mock_client = AsyncMock()
-    mock_client.jira_get.return_value = {"issues": []}
+    mock_client.jira_post.return_value = {"issues": []}
     with patch("src.tools.jira.client", mock_client):
         result = await jira_search("project = NONE")
     assert result == "No issues found."
@@ -30,10 +30,10 @@ async def test_jira_search_no_results():
 @pytest.mark.asyncio
 async def test_jira_search_with_max_results():
     mock_client = AsyncMock()
-    mock_client.jira_get.return_value = {"issues": []}
+    mock_client.jira_post.return_value = {"issues": []}
     with patch("src.tools.jira.client", mock_client):
         await jira_search("project = TEST", max_results=5)
-    mock_client.jira_get.assert_called_once_with("/search", params={"jql": "project = TEST", "maxResults": 5})
+    mock_client.jira_post.assert_called_once_with("/search/jql", json={"jql": "project = TEST", "maxResults": 5, "fields": ["summary", "status"]})
 
 
 @pytest.mark.asyncio

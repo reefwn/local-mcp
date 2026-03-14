@@ -218,7 +218,8 @@ async def bitbucket_list_pipelines(
         branch = target.get("ref_name", target.get("selector", {}).get("pattern", "N/A"))
         created = p.get("created_on", "")[:19]
         display = f"{status}/{result}" if result else status
-        lines.append(f"[#{num}] {display} | {branch} | {created}")
+        uuid = p.get("uuid", "")
+        lines.append(f"[#{num}] {uuid} | {display} | {branch} | {created}")
     return "\n".join(lines) or "No pipelines found."
 
 
