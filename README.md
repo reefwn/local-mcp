@@ -1,6 +1,6 @@
 # Local MCP Server
 
-Aggregated MCP server for Atlassian tools — Jira, Confluence, and Bitbucket — running in a single Docker container.
+MCP server for development and debugging tools — Atlassian (Jira, Confluence, Bitbucket), databases (PostgreSQL, Redis), messaging (Kafka), APM/logging (Elasticsearch, Elastic APM), design (Figma), and notes (Obsidian).
 
 ## Setup
 
