@@ -6,8 +6,12 @@ from src.clients.postgres import PostgresClient
 @pytest.mark.asyncio
 async def test_postgres_client_init():
     client = PostgresClient("postgresql://test:test@localhost/test")
-    assert client._url == "postgresql://test:test@localhost/test"
-    assert client._pool is None
+    assert client._host == "localhost"
+    assert client._port == 5432
+    assert client._user == "test"
+    assert client._password == "test"
+    assert client._default_database == "test"
+    assert client._pools == {}
 
 
 @pytest.mark.asyncio
