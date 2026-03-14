@@ -1,6 +1,6 @@
 # Local MCP Server
 
-Aggregated MCP server for Atlassian tools — Jira, Confluence, and Bitbucket — running in a single Docker container.
+MCP server for development and debugging tools — Atlassian (Jira, Confluence, Bitbucket), databases (PostgreSQL, Redis), messaging (Kafka), APM/logging (Elasticsearch, Elastic APM), design (Figma), and notes (Obsidian).
 
 ## Setup
 
@@ -61,6 +61,17 @@ Aggregated MCP server for Atlassian tools — Jira, Confluence, and Bitbucket �
 
    > Requires [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin installed in Obsidian
 
+   **Elasticsearch:**
+
+   | Variable | How to get it |
+   |----------|---------------|
+   | `ELASTICSEARCH_URL` | Connection URL, e.g. `http://localhost:9200` |
+   | `ELASTICSEARCH_API_KEY` | API key for authentication (optional) |
+   | `ELASTICSEARCH_USERNAME` | Username for Basic Auth (optional) |
+   | `ELASTICSEARCH_PASSWORD` | Password for Basic Auth (optional) |
+
+   > Use either API key or username/password authentication
+
    You can also enable individual services by setting feature flags to `true`:
 
    | Variable | Default |
@@ -73,6 +84,7 @@ Aggregated MCP server for Atlassian tools — Jira, Confluence, and Bitbucket �
    | `ENABLE_KAFKA` | `false` |
    | `ENABLE_FIGMA` | `false` |
    | `ENABLE_OBSIDIAN` | `false` |
+   | `ENABLE_ELASTICSEARCH` | `false` |
 
 ## Run locally
 
@@ -149,3 +161,15 @@ pytest
 | `obsidian_get_periodic_note` | Get current periodic note (daily/weekly/monthly/etc) |
 | `obsidian_get_recent_periodic_notes` | Get recent periodic notes |
 | `obsidian_get_recent_changes` | Get recently modified files |
+| `elasticsearch_search` | Search logs with query string and time range |
+| `elasticsearch_aggregate_errors` | Find most common error patterns |
+| `elasticsearch_get_document` | Get a specific log document by ID |
+| `elasticsearch_list_indices` | List all indices with stats |
+| `elasticsearch_trace_request` | Follow a distributed trace by trace ID |
+| `apm_search_traces` | Search APM traces by service, type, or duration |
+| `apm_get_trace` | Get full trace details with all spans |
+| `apm_search_errors` | Search APM errors by service, message, or type |
+| `apm_get_error` | Get full error details with stack trace |
+| `apm_list_services` | List all services with recent activity |
+| `apm_get_service_metrics` | Get service throughput, latency, error rate |
+| `apm_find_slow_transactions` | Find transactions exceeding duration threshold |

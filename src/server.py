@@ -16,6 +16,9 @@ if config.enable_figma:
     from src.tools import figma  # noqa: F401
 if config.enable_obsidian:
     from src.tools import obsidian  # noqa: F401
+if config.enable_elasticsearch:
+    from src.tools import elasticsearch  # noqa: F401
+    from src.tools import apm  # noqa: F401
 
 
 def main():

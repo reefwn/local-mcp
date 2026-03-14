@@ -30,6 +30,11 @@ class Config:
     enable_obsidian: bool = os.getenv("ENABLE_OBSIDIAN", "false").lower() == "true"
     obsidian_api_key: str = os.getenv("OBSIDIAN_API_KEY", "")
     obsidian_url: str = os.getenv("OBSIDIAN_URL", "https://127.0.0.1:27124")
+    enable_elasticsearch: bool = os.getenv("ENABLE_ELASTICSEARCH", "false").lower() == "true"
+    elasticsearch_url: str = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
+    elasticsearch_api_key: str = os.getenv("ELASTICSEARCH_API_KEY", "")
+    elasticsearch_username: str = os.getenv("ELASTICSEARCH_USERNAME", "")
+    elasticsearch_password: str = os.getenv("ELASTICSEARCH_PASSWORD", "")
 
     @property
     def jira_base_url(self) -> str:
