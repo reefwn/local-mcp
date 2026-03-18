@@ -120,8 +120,10 @@ pytest
 | Tool | Description |
 |------|-------------|
 | `jira_search` | Search issues with JQL |
-| `jira_get_issue` | Get issue details by key |
+| `jira_get_issue` | Get issue details by key (includes custom fields) |
 | `jira_create_issue` | Create a new issue |
+| `jira_add_comment` | Add a comment to an issue |
+| `jira_update_custom_field` | Update a custom field on an issue |
 | `confluence_search` | Search pages by title |
 | `confluence_get_page` | Get page content by ID |
 | `bitbucket_list_repos` | List workspace repositories |
