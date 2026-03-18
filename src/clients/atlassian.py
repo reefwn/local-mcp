@@ -23,6 +23,10 @@ class AtlassianClient:
         r.raise_for_status()
         return r.json()
 
+    async def jira_put(self, path: str, json: dict) -> None:
+        r = await self._jira.put(f"{self.config.jira_base_url}{path}", json=json)
+        r.raise_for_status()
+
     async def confluence_get(self, path: str, params: dict | None = None) -> dict:
         r = await self._confluence.get(f"{self.config.confluence_base_url}{path}", params=params)
         r.raise_for_status()
