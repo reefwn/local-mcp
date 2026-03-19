@@ -7,6 +7,7 @@ def test_config_defaults():
     assert config.jira_email == ""
     assert config.enable_jira is False
     assert config.enable_postgres is False
+    assert config.kafka_ssl_enabled is False
 
 
 def test_config_properties():

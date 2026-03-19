@@ -7,28 +7,75 @@ from src.clients.kafka import KafkaClient
 async def test_kafka_client_init():
     client = KafkaClient("localhost:9092")
     assert client._servers == "localhost:9092"
+    assert client._ssl_enabled is False
+    assert client._ssl_context is None
     assert client._admin is None
     assert client._producer is None
 
 
 @pytest.mark.asyncio
+async def test_kafka_client_init_ssl():
+    client = KafkaClient("localhost:9092", ssl_enabled=True)
+    assert client._ssl_enabled is True
+    assert client._ssl_context is not None
+
+
+@pytest.mark.asyncio
+async def test_ssl_kwargs_disabled():
+    client = KafkaClient("localhost:9092")
+    assert client._ssl_kwargs() == {}
+
+
+@pytest.mark.asyncio
+async def test_ssl_kwargs_enabled():
+    client = KafkaClient("localhost:9092", ssl_enabled=True)
+    kwargs = client._ssl_kwargs()
+    assert kwargs["security_protocol"] == "SSL"
+    assert kwargs["ssl_context"] is client._ssl_context
+
+
+@pytest.mark.asyncio
 async def test_get_admin_creates_admin():
     mock_admin = AsyncMock()
-    with patch("src.clients.kafka.AIOKafkaAdminClient", return_value=mock_admin):
+    with patch("src.clients.kafka.AIOKafkaAdminClient", return_value=mock_admin) as mock_cls:
         client = KafkaClient("localhost:9092")
         admin = await client._get_admin()
     assert admin is mock_admin
+    mock_cls.assert_called_once_with(bootstrap_servers="localhost:9092")
     mock_admin.start.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_admin_with_ssl():
+    mock_admin = AsyncMock()
+    with patch("src.clients.kafka.AIOKafkaAdminClient", return_value=mock_admin) as mock_cls:
+        client = KafkaClient("localhost:9092", ssl_enabled=True)
+        await client._get_admin()
+    _, kwargs = mock_cls.call_args
+    assert kwargs["security_protocol"] == "SSL"
+    assert kwargs["ssl_context"] is client._ssl_context
 
 
 @pytest.mark.asyncio
 async def test_get_producer_creates_producer():
     mock_producer = AsyncMock()
-    with patch("src.clients.kafka.AIOKafkaProducer", return_value=mock_producer):
+    with patch("src.clients.kafka.AIOKafkaProducer", return_value=mock_producer) as mock_cls:
         client = KafkaClient("localhost:9092")
         producer = await client._get_producer()
     assert producer is mock_producer
+    mock_cls.assert_called_once_with(bootstrap_servers="localhost:9092")
     mock_producer.start.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_get_producer_with_ssl():
+    mock_producer = AsyncMock()
+    with patch("src.clients.kafka.AIOKafkaProducer", return_value=mock_producer) as mock_cls:
+        client = KafkaClient("localhost:9092", ssl_enabled=True)
+        await client._get_producer()
+    _, kwargs = mock_cls.call_args
+    assert kwargs["security_protocol"] == "SSL"
+    assert kwargs["ssl_context"] is client._ssl_context
 
 
 @pytest.mark.asyncio
@@ -79,6 +126,18 @@ async def test_consume_success():
         result = await client.consume("t", count=5, timeout_ms=1000)
     assert result == [{"topic": "t", "partition": 0, "offset": 0, "key": "k", "value": "v", "timestamp": 123}]
     mock_consumer.stop.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_consume_with_ssl():
+    mock_consumer = AsyncMock()
+    mock_consumer.getmany.return_value = {}
+    with patch("src.clients.kafka.AIOKafkaConsumer", return_value=mock_consumer) as mock_cls:
+        client = KafkaClient("localhost:9092", ssl_enabled=True)
+        await client.consume("t")
+    _, kwargs = mock_cls.call_args
+    assert kwargs["security_protocol"] == "SSL"
+    assert kwargs["ssl_context"] is client._ssl_context
 
 
 @pytest.mark.asyncio
