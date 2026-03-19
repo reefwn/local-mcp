@@ -133,7 +133,7 @@ pytest
 | `bitbucket_list_pr_comments` | List comments on a pull request |
 | `bitbucket_update_pr_description` | Update the description of a PR |
 | `bitbucket_create_pr_comment` | Post a comment on a pull request |
-| `pg_query` | Run a read-only SQL query |
+| `pg_query` | Run a read-only SQL query (enforced via read-only transaction) |
 | `pg_list_tables` | List tables in a schema |
 | `pg_describe_table` | Describe columns of a table |
 | `pg_list_indexes` | List indexes on a table |

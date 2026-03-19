@@ -30,7 +30,9 @@ class PostgresClient:
 
     async def fetch(self, database: str | None = None, query: str = "", *args) -> list[dict]:
         pool = await self._get_pool(database)
-        rows = await pool.fetch(query, *args)
+        async with pool.acquire() as conn:
+            async with conn.transaction(readonly=True):
+                rows = await conn.fetch(query, *args)
         return [dict(r) for r in rows]
 
     async def execute(self, database: str | None = None, query: str = "", *args) -> str:
