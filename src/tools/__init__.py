@@ -27,7 +27,7 @@ if config.enable_redis:
 
 if config.enable_kafka:
     from src.clients.kafka import KafkaClient
-    kafka_client = KafkaClient(config.kafka_bootstrap_servers)
+    kafka_client = KafkaClient(config.kafka_bootstrap_servers, ssl_enabled=config.kafka_ssl_enabled)
 
 if config.enable_obsidian:
     from src.clients.obsidian import ObsidianClient

@@ -25,6 +25,7 @@ class Config:
     redis_url: str = os.getenv("REDIS_URL", "")
     enable_kafka: bool = os.getenv("ENABLE_KAFKA", "false").lower() == "true"
     kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
+    kafka_ssl_enabled: bool = os.getenv("KAFKA_SSL_ENABLED", "false").lower() == "true"
     enable_figma: bool = os.getenv("ENABLE_FIGMA", "false").lower() == "true"
     figma_api_token: str = os.getenv("FIGMA_API_TOKEN", "")
     enable_obsidian: bool = os.getenv("ENABLE_OBSIDIAN", "false").lower() == "true"

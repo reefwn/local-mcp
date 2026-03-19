@@ -1,3 +1,5 @@
+import ssl
+
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 
@@ -5,20 +7,27 @@ from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 class KafkaClient:
     """Async Kafka client using aiokafka."""
 
-    def __init__(self, bootstrap_servers: str):
+    def __init__(self, bootstrap_servers: str, ssl_enabled: bool = False):
         self._servers = bootstrap_servers
+        self._ssl_enabled = ssl_enabled
+        self._ssl_context = ssl.create_default_context() if ssl_enabled else None
         self._admin: AIOKafkaAdminClient | None = None
         self._producer: AIOKafkaProducer | None = None
 
+    def _ssl_kwargs(self) -> dict:
+        if not self._ssl_enabled:
+            return {}
+        return {"security_protocol": "SSL", "ssl_context": self._ssl_context}
+
     async def _get_admin(self) -> AIOKafkaAdminClient:
         if self._admin is None:
-            self._admin = AIOKafkaAdminClient(bootstrap_servers=self._servers)
+            self._admin = AIOKafkaAdminClient(bootstrap_servers=self._servers, **self._ssl_kwargs())
             await self._admin.start()
         return self._admin
 
     async def _get_producer(self) -> AIOKafkaProducer:
         if self._producer is None:
-            self._producer = AIOKafkaProducer(bootstrap_servers=self._servers)
+            self._producer = AIOKafkaProducer(bootstrap_servers=self._servers, **self._ssl_kwargs())
             await self._producer.start()
         return self._producer
 
@@ -52,6 +61,7 @@ class KafkaClient:
             group_id=group_id or f"local-mcp-{topic}",
             auto_offset_reset="earliest",
             enable_auto_commit=False,
+            **self._ssl_kwargs(),
         )
         await consumer.start()
         messages = []
