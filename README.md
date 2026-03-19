@@ -138,8 +138,6 @@ pytest
 | `pg_describe_table` | Describe columns of a table |
 | `pg_list_indexes` | List indexes on a table |
 | `redis_get` | Get the value of a Redis key |
-| `redis_set` | Set a Redis key with optional TTL |
-| `redis_delete` | Delete a Redis key |
 | `redis_keys` | List keys matching a glob pattern |
 | `kafka_list_topics` | List all Kafka topics |
 | `kafka_describe_topic` | Describe a Kafka topic |
