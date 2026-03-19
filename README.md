@@ -141,8 +141,6 @@ pytest
 | `redis_keys` | List keys matching a glob pattern |
 | `kafka_list_topics` | List all Kafka topics |
 | `kafka_describe_topic` | Describe a Kafka topic |
-| `kafka_create_topic` | Create a new Kafka topic |
-| `kafka_produce` | Produce a message to a topic |
 | `kafka_consume` | Consume messages from a topic |
 | `figma_get_file` | Get a Figma file's structure and metadata |
 | `figma_get_file_nodes` | Get specific nodes from a Figma file by IDs |
