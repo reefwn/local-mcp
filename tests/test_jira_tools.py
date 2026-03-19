@@ -51,7 +51,7 @@ async def test_jira_get_issue_success():
     }
     with patch("src.tools.jira.client", mock_client):
         result = await jira_get_issue("TEST-1")
-    assert result == {"key": "TEST-1", "summary": "Test issue", "status": "Open", "assignee": "John Doe", "priority": "High", "description": "desc"}
+    assert result == {"key": "TEST-1", "summary": "Test issue", "status": "Open", "assignee": "John Doe", "priority": "High", "description": "desc", "custom_fields": {}}
 
 
 @pytest.mark.asyncio
