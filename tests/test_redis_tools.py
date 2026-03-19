@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.tools.redis import redis_get, redis_set, redis_delete, redis_keys
+from src.tools.redis import redis_get, redis_keys
 
 
 @pytest.mark.asyncio
@@ -20,31 +20,6 @@ async def test_redis_get_not_found():
         result = await redis_get("missing")
     assert result == "Key 'missing' not found."
 
-
-@pytest.mark.asyncio
-async def test_redis_set_success():
-    mock_rd = AsyncMock()
-    with patch("src.tools.redis.rd", mock_rd):
-        result = await redis_set("k", "v")
-    assert "OK" in result
-    mock_rd.set.assert_called_once_with("k", "v", ex=None)
-
-
-@pytest.mark.asyncio
-async def test_redis_set_with_ttl():
-    mock_rd = AsyncMock()
-    with patch("src.tools.redis.rd", mock_rd):
-        result = await redis_set("k", "v", ttl=60)
-    mock_rd.set.assert_called_once_with("k", "v", ex=60)
-
-
-@pytest.mark.asyncio
-async def test_redis_delete_success():
-    mock_rd = AsyncMock()
-    mock_rd.delete.return_value = 2
-    with patch("src.tools.redis.rd", mock_rd):
-        result = await redis_delete("k")
-    assert result == "Deleted 2 key(s)."
 
 
 @pytest.mark.asyncio

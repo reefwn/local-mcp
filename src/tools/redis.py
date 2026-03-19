@@ -10,19 +10,6 @@ async def redis_get(key: str) -> str:
     return val if val is not None else f"Key '{key}' not found."
 
 
-@mcp.tool()
-async def redis_set(key: str, value: str, ttl: int | None = None) -> str:
-    """Set a Redis key to a value. Optionally set a TTL in seconds."""
-    await rd.set(key, value, ex=ttl)
-    return f"OK — set '{key}'"
-
-
-@mcp.tool()
-async def redis_delete(key: str) -> str:
-    """Delete a Redis key."""
-    count = await rd.delete(key)
-    return f"Deleted {count} key(s)."
-
 
 @mcp.tool()
 async def redis_keys(pattern: str = "*") -> str:
