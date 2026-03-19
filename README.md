@@ -4,12 +4,23 @@ MCP server for development and debugging tools — Atlassian (Jira, Confluence, 
 
 ## Setup
 
-1. Copy `.env.example` to `.env`:
-   ```bash
-   cp .env.example .env
-   ```
+There are two environment files for the two Docker Compose services:
 
-2. Fill in your `.env` values:
+| File | Service | Port | Purpose |
+|------|---------|------|---------|
+| `.env.dev` | `dev` | 7373 | Atlassian, Figma, Obsidian |
+| `.env.debug` | `debug` | 7374 | PostgreSQL, Redis, Kafka, Elasticsearch/APM |
+
+Copy the example files and fill in your values:
+
+```bash
+cp .env.dev.example .env.dev
+cp .env.debug.example .env.debug
+```
+
+> `.env.example` is still available if you want to run a single instance with all services via `python -m src.server` or standalone Docker.
+
+### Environment variables
 
    **Atlassian:**
 
