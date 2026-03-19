@@ -1,8 +1,16 @@
 services:
-  server:
+  dev:
     build: .
-    container_name: local-mcp-server
-    env_file: .env
+    container_name: local-mcp-dev
+    env_file: .env.dev
     ports:
       - "7373:7373"
+    restart: unless-stopped
+
+  debug:
+    build: .
+    container_name: local-mcp-debug
+    env_file: .env.debug
+    ports:
+      - "7374:7373"
     restart: unless-stopped
