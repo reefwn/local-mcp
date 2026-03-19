@@ -17,19 +17,6 @@ async def kafka_describe_topic(topic: str) -> str:
     return json.dumps(descriptions, default=str, indent=2)
 
 
-@mcp.tool()
-async def kafka_create_topic(name: str, num_partitions: int = 1, replication_factor: int = 1) -> str:
-    """Create a new Kafka topic."""
-    await kf.create_topic(name, num_partitions, replication_factor)
-    return f"Topic '{name}' created (partitions={num_partitions}, replication={replication_factor})."
-
-
-@mcp.tool()
-async def kafka_produce(topic: str, value: str, key: str | None = None) -> str:
-    """Produce a message to a Kafka topic. Optionally specify a key."""
-    record = await kf.produce(topic, value, key)
-    return json.dumps(record, indent=2)
-
 
 @mcp.tool()
 async def kafka_consume(topic: str, count: int = 10, timeout_ms: int = 5000) -> str:
