@@ -1,5 +1,6 @@
+import asyncpg
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from src.clients.postgres import PostgresClient
 
 
@@ -33,24 +34,55 @@ async def test_get_pool_reuses_existing():
         mock_create.assert_called_once()
 
 
+def _mock_fetch_pool(mock_conn):
+    """Create a mock pool where acquire() and transaction() are sync calls returning async context managers."""
+    mock_tx = MagicMock()
+    mock_tx.__aenter__ = AsyncMock(return_value=None)
+    mock_tx.__aexit__ = AsyncMock(return_value=False)
+    mock_conn.transaction = MagicMock(return_value=mock_tx)
+
+    mock_acq = MagicMock()
+    mock_acq.__aenter__ = AsyncMock(return_value=mock_conn)
+    mock_acq.__aexit__ = AsyncMock(return_value=False)
+
+    mock_pool = AsyncMock()
+    mock_pool.acquire = MagicMock(return_value=mock_acq)
+    return mock_pool
+
+
 @pytest.mark.asyncio
 async def test_fetch_success():
-    mock_pool = AsyncMock()
-    mock_pool.fetch.return_value = [{"id": 1, "name": "test"}]
+    mock_conn = AsyncMock()
+    mock_conn.fetch.return_value = [{"id": 1, "name": "test"}]
+    mock_pool = _mock_fetch_pool(mock_conn)
     with patch("asyncpg.create_pool", new_callable=AsyncMock, return_value=mock_pool):
         client = PostgresClient("postgresql://test:test@localhost/test")
-        result = await client.fetch("SELECT 1")
+        result = await client.fetch(query="SELECT 1")
+    mock_conn.transaction.assert_called_once_with(readonly=True)
     assert result == [{"id": 1, "name": "test"}]
 
 
 @pytest.mark.asyncio
 async def test_fetch_empty():
-    mock_pool = AsyncMock()
-    mock_pool.fetch.return_value = []
+    mock_conn = AsyncMock()
+    mock_conn.fetch.return_value = []
+    mock_pool = _mock_fetch_pool(mock_conn)
     with patch("asyncpg.create_pool", new_callable=AsyncMock, return_value=mock_pool):
         client = PostgresClient("postgresql://test:test@localhost/test")
-        result = await client.fetch("SELECT 1")
+        result = await client.fetch(query="SELECT 1")
+    mock_conn.transaction.assert_called_once_with(readonly=True)
     assert result == []
+
+
+@pytest.mark.asyncio
+async def test_fetch_rejects_write_query():
+    mock_conn = AsyncMock()
+    mock_conn.fetch.side_effect = asyncpg.ReadOnlySQLTransactionError("cannot execute INSERT in a read-only transaction")
+    mock_pool = _mock_fetch_pool(mock_conn)
+    with patch("asyncpg.create_pool", new_callable=AsyncMock, return_value=mock_pool):
+        client = PostgresClient("postgresql://test:test@localhost/test")
+        with pytest.raises(asyncpg.ReadOnlySQLTransactionError):
+            await client.fetch(query="INSERT INTO t VALUES (1)")
 
 
 @pytest.mark.asyncio
