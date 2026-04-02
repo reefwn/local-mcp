@@ -102,6 +102,39 @@ async def bitbucket_create_pr_comment(repo_slug: str, pr_id: int, content: str) 
 
 
 @mcp.tool()
+async def bitbucket_create_pr(
+    repo_slug: str,
+    title: str,
+    source_branch: str,
+    destination_branch: str | None = None,
+    description: str = "",
+    close_source_branch: bool = False,
+) -> dict:
+    """Create a new pull request. If destination_branch is omitted, the repo's main branch is used."""
+    ws = config.bitbucket_workspace
+    body: dict = {
+        "title": title,
+        "source": {"branch": {"name": source_branch}},
+        "description": description,
+        "close_source_branch": close_source_branch,
+    }
+    if destination_branch:
+        body["destination"] = {"branch": {"name": destination_branch}}
+    data = await client.bitbucket_post(
+        f"/repositories/{ws}/{repo_slug}/pullrequests",
+        json=body,
+    )
+    return {
+        "id": data["id"],
+        "title": data["title"],
+        "state": data["state"],
+        "source": data["source"]["branch"]["name"],
+        "destination": data["destination"]["branch"]["name"],
+        "url": data["links"]["html"]["href"],
+    }
+
+
+@mcp.tool()
 async def bitbucket_get_repo(repo_slug: str) -> dict:
     """Get repository details including name, description, language, size, and settings."""
     ws = config.bitbucket_workspace
