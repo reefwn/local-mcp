@@ -91,3 +91,31 @@ async def jira_update_custom_field(issue_key: str, field_id: str, value: str) ->
     parsed = json.loads(value)
     await client.jira_put(f"/issue/{issue_key}", json={"fields": {field_id: parsed}})
     return f"Updated {field_id} on {issue_key}."
+
+
+@mcp.tool()
+async def jira_list_comments(issue_key: str) -> list[dict]:
+    """List all comments on a Jira issue by key (e.g. PROJ-123)."""
+    data = await client.jira_get(f"/issue/{issue_key}/comment")
+    return [
+        {
+            "id": c["id"],
+            "author": c.get("author", {}).get("displayName", "Unknown"),
+            "body": c.get("body"),
+            "created": c.get("created"),
+        }
+        for c in data.get("comments", [])
+    ]
+
+
+@mcp.tool()
+async def jira_get_comment(issue_key: str, comment_id: str) -> dict:
+    """Get a specific comment on a Jira issue by issue key and comment ID."""
+    c = await client.jira_get(f"/issue/{issue_key}/comment/{comment_id}")
+    return {
+        "id": c["id"],
+        "author": c.get("author", {}).get("displayName", "Unknown"),
+        "body": c.get("body"),
+        "created": c.get("created"),
+        "updated": c.get("updated"),
+    }
