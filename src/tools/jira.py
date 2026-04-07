@@ -106,3 +106,16 @@ async def jira_list_comments(issue_key: str) -> list[dict]:
         }
         for c in data.get("comments", [])
     ]
+
+
+@mcp.tool()
+async def jira_get_comment(issue_key: str, comment_id: str) -> dict:
+    """Get a specific comment on a Jira issue by issue key and comment ID."""
+    c = await client.jira_get(f"/issue/{issue_key}/comment/{comment_id}")
+    return {
+        "id": c["id"],
+        "author": c.get("author", {}).get("displayName", "Unknown"),
+        "body": c.get("body"),
+        "created": c.get("created"),
+        "updated": c.get("updated"),
+    }
