@@ -21,7 +21,7 @@ class AtlassianClient:
     async def jira_post(self, path: str, json: dict) -> dict:
         r = await self._jira.post(f"{self.config.jira_base_url}{path}", json=json)
         r.raise_for_status()
-        return r.json()
+        return r.json() if r.content else {}
 
     async def jira_put(self, path: str, json: dict) -> None:
         r = await self._jira.put(f"{self.config.jira_base_url}{path}", json=json)
