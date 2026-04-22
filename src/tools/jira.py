@@ -119,3 +119,24 @@ async def jira_get_comment(issue_key: str, comment_id: str) -> dict:
         "created": c.get("created"),
         "updated": c.get("updated"),
     }
+
+
+@mcp.tool()
+async def jira_list_transitions(issue_key: str) -> list[dict]:
+    """List available status transitions for a Jira issue. Use this to find valid transition IDs before calling jira_update_status."""
+    data = await client.jira_get(f"/issue/{issue_key}/transitions")
+    return [{"id": t["id"], "name": t["name"], "to": t["to"]["name"]} for t in data.get("transitions", [])]
+
+
+@mcp.tool()
+async def jira_update_status(issue_key: str, transition_id: str) -> str:
+    """Update the status of a Jira issue by performing a transition.
+
+    Use jira_list_transitions first to get available transition IDs for the issue.
+
+    Args:
+        issue_key: The issue key (e.g. PROJ-123).
+        transition_id: The transition ID from jira_list_transitions.
+    """
+    await client.jira_post(f"/issue/{issue_key}/transitions", json={"transition": {"id": transition_id}})
+    return f"Transitioned {issue_key} with transition {transition_id}."
