@@ -109,8 +109,9 @@ async def bitbucket_create_pr(
     destination_branch: str | None = None,
     description: str = "",
     close_source_branch: bool = False,
+    reviewers: list[str] | None = None,
 ) -> dict:
-    """Create a new pull request. If destination_branch is omitted, the repo's main branch is used."""
+    """Create a new pull request. If destination_branch is omitted, the repo's main branch is used. Reviewers is a list of user UUIDs to add as reviewers."""
     ws = config.bitbucket_workspace
     body: dict = {
         "title": title,
@@ -120,6 +121,8 @@ async def bitbucket_create_pr(
     }
     if destination_branch:
         body["destination"] = {"branch": {"name": destination_branch}}
+    if reviewers:
+        body["reviewers"] = [{"uuid": uuid} for uuid in reviewers]
     data = await client.bitbucket_post(
         f"/repositories/{ws}/{repo_slug}/pullrequests",
         json=body,
@@ -321,3 +324,30 @@ async def bitbucket_create_branch_restriction(
         f"/repositories/{ws}/{repo_slug}/branch-restrictions",
         json={"kind": kind, "pattern": pattern},
     )
+
+
+@mcp.tool()
+async def bitbucket_list_workspace_members() -> list[dict]:
+    """List members of the configured Bitbucket workspace. Returns display names and UUIDs, useful for finding reviewer UUIDs."""
+    ws = config.bitbucket_workspace
+    data = await client.bitbucket_get(f"/workspaces/{ws}/members")
+    return [
+        {"display_name": m["user"]["display_name"], "uuid": m["user"]["uuid"]}
+        for m in data.get("values", [])
+        if m.get("user")
+    ]
+
+
+@mcp.tool()
+async def bitbucket_list_default_reviewers(repo_slug: str) -> list[dict]:
+    """List effective default reviewers for a repository. Includes both repo-level and project-inherited reviewers with their UUIDs."""
+    ws = config.bitbucket_workspace
+    data = await client.bitbucket_get(f"/repositories/{ws}/{repo_slug}/effective-default-reviewers")
+    return [
+        {
+            "display_name": r["user"]["display_name"],
+            "uuid": r["user"]["uuid"],
+            "reviewer_type": r.get("reviewer_type", "repository"),
+        }
+        for r in data.get("values", [])
+    ]

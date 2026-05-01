@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from src.tools.bitbucket import (
     bitbucket_list_repos, bitbucket_list_prs, bitbucket_get_pr,
     bitbucket_get_pr_diff, bitbucket_list_pr_comments, bitbucket_create_pr_comment,
+    bitbucket_create_pr, bitbucket_list_workspace_members, bitbucket_list_default_reviewers,
 )
 
 
@@ -105,3 +106,73 @@ async def test_bitbucket_create_pr_comment():
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_create_pr_comment("repo", 1, "Nice")
     assert result == {"id": "c1"}
+
+
+_PR_RESPONSE = {
+    "id": 42,
+    "title": "My PR",
+    "state": "OPEN",
+    "source": {"branch": {"name": "feat"}},
+    "destination": {"branch": {"name": "main"}},
+    "links": {"html": {"href": "https://bitbucket.org/test-ws/repo/pull-requests/42"}},
+}
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_create_pr_basic():
+    mc, cfg = _patches()
+    mc.bitbucket_post.return_value = _PR_RESPONSE
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_create_pr("repo", "My PR", "feat")
+    body = mc.bitbucket_post.call_args[1]["json"]
+    assert body["source"] == {"branch": {"name": "feat"}}
+    assert "reviewers" not in body
+    assert result["id"] == 42
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_create_pr_with_reviewers():
+    mc, cfg = _patches()
+    mc.bitbucket_post.return_value = _PR_RESPONSE
+    uuids = ["{uuid-1}", "{uuid-2}"]
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_create_pr("repo", "My PR", "feat", reviewers=uuids)
+    body = mc.bitbucket_post.call_args[1]["json"]
+    assert body["reviewers"] == [{"uuid": "{uuid-1}"}, {"uuid": "{uuid-2}"}]
+    assert result["url"] == "https://bitbucket.org/test-ws/repo/pull-requests/42"
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_list_workspace_members():
+    mc, cfg = _patches()
+    mc.bitbucket_get.return_value = {
+        "values": [
+            {"user": {"display_name": "Alice", "uuid": "{uuid-a}"}},
+            {"user": {"display_name": "Bob", "uuid": "{uuid-b}"}},
+        ]
+    }
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_list_workspace_members()
+    mc.bitbucket_get.assert_called_once_with("/workspaces/test-ws/members")
+    assert result == [
+        {"display_name": "Alice", "uuid": "{uuid-a}"},
+        {"display_name": "Bob", "uuid": "{uuid-b}"},
+    ]
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_list_default_reviewers():
+    mc, cfg = _patches()
+    mc.bitbucket_get.return_value = {
+        "values": [
+            {"user": {"display_name": "Alice", "uuid": "{uuid-a}"}, "reviewer_type": "project", "type": "default_reviewer"},
+            {"user": {"display_name": "Bob", "uuid": "{uuid-b}"}, "reviewer_type": "repository", "type": "default_reviewer"},
+        ]
+    }
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_list_default_reviewers("my-repo")
+    mc.bitbucket_get.assert_called_once_with("/repositories/test-ws/my-repo/effective-default-reviewers")
+    assert result == [
+        {"display_name": "Alice", "uuid": "{uuid-a}", "reviewer_type": "project"},
+        {"display_name": "Bob", "uuid": "{uuid-b}", "reviewer_type": "repository"},
+    ]
