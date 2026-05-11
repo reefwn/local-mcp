@@ -4,6 +4,7 @@ from src.tools.bitbucket import (
     bitbucket_list_repos, bitbucket_list_prs, bitbucket_get_pr,
     bitbucket_get_pr_diff, bitbucket_list_pr_comments, bitbucket_create_pr_comment,
     bitbucket_create_pr, bitbucket_list_workspace_members, bitbucket_list_default_reviewers,
+    bitbucket_update_pr_reviewers,
 )
 
 
@@ -176,3 +177,17 @@ async def test_bitbucket_list_default_reviewers():
         {"display_name": "Alice", "uuid": "{uuid-a}", "reviewer_type": "project"},
         {"display_name": "Bob", "uuid": "{uuid-b}", "reviewer_type": "repository"},
     ]
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_update_pr_reviewers():
+    mc, cfg = _patches()
+    mc.bitbucket_put.return_value = {}
+    uuids = ["{uuid-1}", "{uuid-2}"]
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_update_pr_reviewers("repo", 5, uuids)
+    mc.bitbucket_put.assert_called_once_with(
+        "/repositories/test-ws/repo/pullrequests/5",
+        json={"reviewers": [{"uuid": "{uuid-1}"}, {"uuid": "{uuid-2}"}]},
+    )
+    assert "updated" in result

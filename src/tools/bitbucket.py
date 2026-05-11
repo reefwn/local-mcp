@@ -92,6 +92,17 @@ async def bitbucket_update_pr_description(repo_slug: str, pr_id: int, descriptio
 
 
 @mcp.tool()
+async def bitbucket_update_pr_reviewers(repo_slug: str, pr_id: int, reviewers: list[str]) -> str:
+    """Update the reviewers of a Bitbucket pull request. Reviewers is a list of user UUIDs. This replaces the current reviewer list entirely."""
+    ws = config.bitbucket_workspace
+    await client.bitbucket_put(
+        f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}",
+        json={"reviewers": [{"uuid": uuid} for uuid in reviewers]},
+    )
+    return f"PR #{pr_id} reviewers updated."
+
+
+@mcp.tool()
 async def bitbucket_create_pr_comment(repo_slug: str, pr_id: int, content: str) -> dict:
     """Post a comment on a pull request."""
     ws = config.bitbucket_workspace
