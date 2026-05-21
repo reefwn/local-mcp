@@ -1,6 +1,7 @@
 .env
-.env.dev
-.env.debug
+.env.*
+!.env.*.example
+
 __pycache__/
 *.pyc
 .venv/

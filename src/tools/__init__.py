@@ -1,21 +1,25 @@
-from mcp.server.fastmcp import FastMCP
-
 from src.config import Config
 
-mcp = FastMCP("local-mcp-server", host="0.0.0.0", port=7373)
 config = Config()
 
 # Initialize clients only when enabled
-atlassian_client = None
+jira_cloud_client = None
+bitbucket_client = None
 postgres_client = None
 redis_client = None
 kafka_client = None
 obsidian_client = None
 elasticsearch_client = None
 
-if config.enable_jira or config.enable_confluence or config.enable_bitbucket:
-    from src.clients.atlassian import AtlassianClient
-    atlassian_client = AtlassianClient(config)
+if config.enable_jira or config.enable_confluence:
+    from src.clients.atlassian import JiraCloudClient
+
+    jira_cloud_client = JiraCloudClient(config)
+
+if config.enable_bitbucket:
+    from src.clients.atlassian import BitbucketClient
+
+    bitbucket_client = BitbucketClient(config)
 
 if config.enable_postgres:
     from src.clients.postgres import PostgresClient
@@ -39,5 +43,5 @@ if config.enable_elasticsearch:
         url=config.elasticsearch_url,
         api_key=config.elasticsearch_api_key,
         username=config.elasticsearch_username,
-        password=config.elasticsearch_password
+        password=config.elasticsearch_password,
     )
