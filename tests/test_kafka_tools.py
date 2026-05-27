@@ -1,8 +1,12 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.tools.kafka import (
-    kafka_list_topics, kafka_describe_topic, kafka_consume,
-)
+
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.kafka")
+kafka_list_topics = _tools["kafka_list_topics"]
+kafka_describe_topic = _tools["kafka_describe_topic"]
+kafka_consume = _tools["kafka_consume"]
 
 
 @pytest.mark.asyncio

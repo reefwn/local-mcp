@@ -1,7 +1,19 @@
+import importlib
+
 import pytest
+from mcp.server.fastmcp import FastMCP
 from unittest.mock import AsyncMock, MagicMock, patch
+
 from src.config import Config
 from src.clients import BitbucketClient, JiraCloudClient
+
+
+def load_tool_functions(module_name: str) -> dict:
+    """Return {tool_name: async_fn} after running register() on a tools module."""
+    module = importlib.import_module(module_name)
+    mcp = FastMCP("test")
+    module.register(mcp)
+    return {name: tool.fn for name, tool in mcp._tool_manager._tools.items()}
 
 
 @pytest.fixture

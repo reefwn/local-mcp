@@ -1,6 +1,16 @@
 from mcp.server.fastmcp import FastMCP
 
+from src.clients.atlassian import format_bitbucket_pipeline_ref, format_bitbucket_uuid
 from src.tools import bitbucket_client as client, config
+
+_PR_STATES = frozenset({"OPEN", "MERGED", "DECLINED"})
+
+
+def _require_non_empty(value: str, field: str) -> str:
+    stripped = value.strip()
+    if not stripped:
+        raise ValueError(f"{field} is required and must be a non-empty string.")
+    return stripped
 
 
 def register(mcp: FastMCP) -> None:
@@ -19,20 +29,24 @@ def register(mcp: FastMCP) -> None:
     async def bitbucket_list_prs(
         repo_slug: str,
         state: str = "OPEN",
-        target_branch: str | None = None,
-        source_branch: str | None = None,
-        author: str | None = None,
+        target_branch: str = "",
+        source_branch: str = "",
+        author: str = "",
     ) -> str:
-        """List pull requests for a Bitbucket repository. State: OPEN, MERGED, DECLINED. Optionally filter by target_branch, source_branch, or author (Atlassian display name or account nickname)."""
+        """List pull requests for a Bitbucket repository. State: OPEN, MERGED, DECLINED. Optionally filter by target_branch, source_branch, or author (Atlassian display name or account nickname). Leave optional filters empty to omit them."""
+        repo_slug = _require_non_empty(repo_slug, "repo_slug")
+        state = state.strip().upper()
+        if state not in _PR_STATES:
+            raise ValueError(f"state must be one of {sorted(_PR_STATES)}, got {state!r}.")
         ws = config.bitbucket_workspace
         params: dict = {"state": state}
         filters = []
-        if target_branch:
-            filters.append(f'destination.branch.name = "{target_branch}"')
-        if source_branch:
-            filters.append(f'source.branch.name = "{source_branch}"')
-        if author:
-            filters.append(f'author.display_name ~ "{author}"')
+        if target_branch.strip():
+            filters.append(f'destination.branch.name = "{target_branch.strip()}"')
+        if source_branch.strip():
+            filters.append(f'source.branch.name = "{source_branch.strip()}"')
+        if author.strip():
+            filters.append(f'author.display_name ~ "{author.strip()}"')
         if filters:
             params["q"] = " AND ".join(filters)
         data = await client.get(
@@ -112,12 +126,15 @@ def register(mcp: FastMCP) -> None:
         repo_slug: str,
         title: str,
         source_branch: str,
-        destination_branch: str | None = None,
+        destination_branch: str = "",
         description: str = "",
         close_source_branch: bool = False,
         reviewers: list[str] | None = None,
     ) -> dict:
-        """Create a new pull request. If destination_branch is omitted, the repo's main branch is used. Reviewers is a list of user UUIDs to add as reviewers."""
+        """Create a new pull request. If destination_branch is empty, the repo's main branch is used. Reviewers is a list of user UUIDs to add as reviewers."""
+        repo_slug = _require_non_empty(repo_slug, "repo_slug")
+        title = _require_non_empty(title, "title")
+        source_branch = _require_non_empty(source_branch, "source_branch")
         ws = config.bitbucket_workspace
         body: dict = {
             "title": title,
@@ -125,8 +142,8 @@ def register(mcp: FastMCP) -> None:
             "description": description,
             "close_source_branch": close_source_branch,
         }
-        if destination_branch:
-            body["destination"] = {"branch": {"name": destination_branch}}
+        if destination_branch.strip():
+            body["destination"] = {"branch": {"name": destination_branch.strip()}}
         if reviewers:
             body["reviewers"] = [{"uuid": uuid} for uuid in reviewers]
         data = await client.post(
@@ -187,13 +204,13 @@ def register(mcp: FastMCP) -> None:
         }
 
     @mcp.tool()
-    async def bitbucket_list_commits(repo_slug: str, branch: str | None = None, limit: int = 10) -> str:
-        """List commits in a repository. Optionally filter by branch."""
+    async def bitbucket_list_commits(repo_slug: str, branch: str = "", limit: int = 10) -> str:
+        """List commits in a repository. Optionally filter by branch (leave empty for default)."""
         ws = config.bitbucket_workspace
         params = {"pagelen": limit}
         path = f"/repositories/{ws}/{repo_slug}/commits"
-        if branch:
-            path = f"{path}/{branch}"
+        if branch.strip():
+            path = f"{path}/{branch.strip()}"
         data = await client.get(path, params=params)
         commits = data.get("values", [])
         return "\n".join(
@@ -256,9 +273,10 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def bitbucket_get_pipeline(repo_slug: str, pipeline_uuid: str) -> dict:
-        """Get details of a specific pipeline by UUID."""
+        """Get details of a specific pipeline by build number or UUID (braces optional)."""
         ws = config.bitbucket_workspace
-        data = await client.get(f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_uuid}")
+        pipeline_ref = format_bitbucket_pipeline_ref(pipeline_uuid)
+        data = await client.get(f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_ref}")
         state = data.get("state", {})
         return {
             "uuid": data.get("uuid"),
@@ -274,10 +292,11 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def bitbucket_list_pipeline_steps(repo_slug: str, pipeline_uuid: str) -> str:
-        """List steps for a given pipeline. Shows step name, status, and duration."""
+        """List steps for a given pipeline. Shows step name, status, and duration. pipeline_uuid may be a build number or UUID."""
         ws = config.bitbucket_workspace
+        pipeline_ref = format_bitbucket_pipeline_ref(pipeline_uuid)
         data = await client.get(
-            f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_uuid}/steps",
+            f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_ref}/steps",
         )
         steps = data.get("values", [])
         lines = []
@@ -294,10 +313,13 @@ def register(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def bitbucket_get_pipeline_step_log(repo_slug: str, pipeline_uuid: str, step_uuid: str) -> str:
-        """Get the log output for a specific step of a pipeline."""
+        """Get the log output for a specific step of a pipeline. pipeline_uuid may be a build number (e.g. 263) or UUID (with or without braces). step_uuid is the step UUID (braces optional)."""
+        repo_slug = _require_non_empty(repo_slug, "repo_slug")
         ws = config.bitbucket_workspace
-        return await client.get_text(
-            f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_uuid}/steps/{step_uuid}/log",
+        pipeline_ref = format_bitbucket_pipeline_ref(pipeline_uuid)
+        step_ref = format_bitbucket_uuid(step_uuid, label="step_uuid")
+        return await client.get_binary_text(
+            f"/repositories/{ws}/{repo_slug}/pipelines/{pipeline_ref}/steps/{step_ref}/log",
         )
 
     @mcp.tool()

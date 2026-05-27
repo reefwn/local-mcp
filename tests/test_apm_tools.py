@@ -2,15 +2,16 @@ import json
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from src.tools.apm import (
-    apm_search_traces,
-    apm_get_trace,
-    apm_search_errors,
-    apm_get_error,
-    apm_list_services,
-    apm_get_service_metrics,
-    apm_find_slow_transactions,
-)
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.apm")
+apm_search_traces = _tools["apm_search_traces"]
+apm_get_trace = _tools["apm_get_trace"]
+apm_search_errors = _tools["apm_search_errors"]
+apm_get_error = _tools["apm_get_error"]
+apm_list_services = _tools["apm_list_services"]
+apm_get_service_metrics = _tools["apm_get_service_metrics"]
+apm_find_slow_transactions = _tools["apm_find_slow_transactions"]
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.tools.confluence import confluence_search, confluence_get_page
+
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.confluence")
+confluence_search = _tools["confluence_search"]
+confluence_get_page = _tools["confluence_get_page"]
 
 
 @pytest.mark.asyncio

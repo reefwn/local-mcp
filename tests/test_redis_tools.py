@@ -1,6 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.tools.redis import redis_get, redis_keys
+
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.redis")
+redis_get = _tools["redis_get"]
+redis_keys = _tools["redis_keys"]
 
 
 @pytest.mark.asyncio

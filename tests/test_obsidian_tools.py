@@ -3,20 +3,21 @@ from unittest.mock import patch
 
 import pytest
 
-from src.tools.obsidian import (
-    obsidian_append_content,
-    obsidian_complex_search,
-    obsidian_delete_file,
-    obsidian_get_file_contents,
-    obsidian_get_periodic_note,
-    obsidian_get_recent_changes,
-    obsidian_get_recent_periodic_notes,
-    obsidian_list_files_in_dir,
-    obsidian_list_files_in_vault,
-    obsidian_patch_content,
-    obsidian_put_content,
-    obsidian_simple_search,
-)
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.obsidian")
+obsidian_append_content = _tools["obsidian_append_content"]
+obsidian_complex_search = _tools["obsidian_complex_search"]
+obsidian_delete_file = _tools["obsidian_delete_file"]
+obsidian_get_file_contents = _tools["obsidian_get_file_contents"]
+obsidian_get_periodic_note = _tools["obsidian_get_periodic_note"]
+obsidian_get_recent_changes = _tools["obsidian_get_recent_changes"]
+obsidian_get_recent_periodic_notes = _tools["obsidian_get_recent_periodic_notes"]
+obsidian_list_files_in_dir = _tools["obsidian_list_files_in_dir"]
+obsidian_list_files_in_vault = _tools["obsidian_list_files_in_vault"]
+obsidian_patch_content = _tools["obsidian_patch_content"]
+obsidian_put_content = _tools["obsidian_put_content"]
+obsidian_simple_search = _tools["obsidian_simple_search"]
 
 
 @pytest.mark.asyncio

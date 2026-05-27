@@ -1,6 +1,13 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.tools.postgres import pg_query, pg_list_tables, pg_describe_table, pg_list_indexes
+
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.postgres")
+pg_query = _tools["pg_query"]
+pg_list_tables = _tools["pg_list_tables"]
+pg_describe_table = _tools["pg_describe_table"]
+pg_list_indexes = _tools["pg_list_indexes"]
 
 
 @pytest.mark.asyncio

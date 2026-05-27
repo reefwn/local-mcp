@@ -1,9 +1,15 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from src.tools.figma import (
-    _parse_file_key, figma_get_file, figma_get_file_nodes,
-    figma_get_images, figma_get_comments, figma_post_comment,
-)
+
+from src.tools.figma import _parse_file_key
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.figma")
+figma_get_file = _tools["figma_get_file"]
+figma_get_file_nodes = _tools["figma_get_file_nodes"]
+figma_get_images = _tools["figma_get_images"]
+figma_get_comments = _tools["figma_get_comments"]
+figma_post_comment = _tools["figma_post_comment"]
 
 
 def test_parse_file_key_from_url():
@@ -32,7 +38,7 @@ async def test_figma_get_file_success():
         "name": "Test", "lastModified": "2023-01-01", "version": "1",
         "document": {}, "components": {}, "styles": {},
     })
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         result = await figma_get_file("abc123")
     assert result["name"] == "Test"
     mock_client.get.assert_called_once_with("/files/abc123", params={})
@@ -42,7 +48,7 @@ async def test_figma_get_file_success():
 async def test_figma_get_file_with_depth():
     mock_client = AsyncMock()
     mock_client.get.return_value = _mock_figma_response({"name": "Test"})
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         await figma_get_file("abc123", depth=2)
     mock_client.get.assert_called_once_with("/files/abc123", params={"depth": 2})
 
@@ -51,7 +57,7 @@ async def test_figma_get_file_with_depth():
 async def test_figma_get_file_from_url():
     mock_client = AsyncMock()
     mock_client.get.return_value = _mock_figma_response({"name": "Test"})
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         await figma_get_file("https://www.figma.com/file/abc123/Test")
     mock_client.get.assert_called_once_with("/files/abc123", params={})
 
@@ -60,7 +66,7 @@ async def test_figma_get_file_from_url():
 async def test_figma_get_file_nodes():
     mock_client = AsyncMock()
     mock_client.get.return_value = _mock_figma_response({"nodes": {"n1": {"type": "FRAME"}}})
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         result = await figma_get_file_nodes("abc123", "n1")
     assert result == {"n1": {"type": "FRAME"}}
 
@@ -69,7 +75,7 @@ async def test_figma_get_file_nodes():
 async def test_figma_get_images():
     mock_client = AsyncMock()
     mock_client.get.return_value = _mock_figma_response({"images": {"n1": "https://img.png"}})
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         result = await figma_get_images("abc123", "n1")
     assert result == {"n1": "https://img.png"}
 
@@ -82,7 +88,7 @@ async def test_figma_get_comments():
             {"id": "c1", "message": "Nice", "user": {"handle": "john"}, "created_at": "2023-01-01", "order_id": 1, "parent_id": None},
         ]
     })
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         result = await figma_get_comments("abc123")
     assert result[0]["user"] == "john"
 
@@ -91,7 +97,7 @@ async def test_figma_get_comments():
 async def test_figma_post_comment_basic():
     mock_client = AsyncMock()
     mock_client.post.return_value = _mock_figma_response({"id": "new"})
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         result = await figma_post_comment("abc123", "Hello")
     assert result == {"id": "new"}
     mock_client.post.assert_called_once_with("/files/abc123/comments", json={"message": "Hello"})
@@ -101,7 +107,7 @@ async def test_figma_post_comment_basic():
 async def test_figma_post_comment_with_node():
     mock_client = AsyncMock()
     mock_client.post.return_value = _mock_figma_response({"id": "new"})
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         await figma_post_comment("abc123", "Hello", node_id="n1")
     body = mock_client.post.call_args[1]["json"]
     assert "client_meta" in body
@@ -111,7 +117,7 @@ async def test_figma_post_comment_with_node():
 async def test_figma_post_comment_reply():
     mock_client = AsyncMock()
     mock_client.post.return_value = _mock_figma_response({"id": "reply"})
-    with patch("src.tools.figma._client", mock_client):
+    with patch("src.tools.figma._get_client", return_value=mock_client):
         await figma_post_comment("abc123", "Reply", comment_id="parent1")
     body = mock_client.post.call_args[1]["json"]
     assert body["comment_id"] == "parent1"
