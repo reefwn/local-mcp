@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.config import Config
-from src.clients import AtlassianClient
+from src.clients import BitbucketClient, JiraCloudClient
 
 
 @pytest.fixture
@@ -30,10 +30,17 @@ def mock_config():
 
 
 @pytest.fixture
-def mock_atlassian_client(mock_config):
+def mock_jira_cloud_client(mock_config):
     with patch("httpx.AsyncClient"):
-        client = AtlassianClient(mock_config)
+        client = JiraCloudClient(mock_config)
         client._jira = AsyncMock()
-        client._confluence = AsyncMock()
-        client._bitbucket = AsyncMock()
+        client._confluence = client._jira
+        return client
+
+
+@pytest.fixture
+def mock_bitbucket_client(mock_config):
+    with patch("httpx.AsyncClient"):
+        client = BitbucketClient(mock_config)
+        client._http = AsyncMock()
         return client

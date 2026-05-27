@@ -18,7 +18,7 @@ def _patches():
 @pytest.mark.asyncio
 async def test_bitbucket_list_repos_with_results():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {
+    mc.get.return_value = {
         "values": [
             {"slug": "repo1", "description": "Desc", "updated_on": "2023-01-01T00:00:00Z"},
         ]
@@ -31,7 +31,7 @@ async def test_bitbucket_list_repos_with_results():
 @pytest.mark.asyncio
 async def test_bitbucket_list_repos_no_results():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {"values": []}
+    mc.get.return_value = {"values": []}
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_list_repos()
     assert result == "No repositories found."
@@ -40,7 +40,7 @@ async def test_bitbucket_list_repos_no_results():
 @pytest.mark.asyncio
 async def test_bitbucket_list_prs_basic():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {
+    mc.get.return_value = {
         "values": [{"id": 1, "title": "PR 1", "author": {"display_name": "John"}, "state": "OPEN"}]
     }
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
@@ -51,10 +51,10 @@ async def test_bitbucket_list_prs_basic():
 @pytest.mark.asyncio
 async def test_bitbucket_list_prs_with_filters():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {"values": []}
+    mc.get.return_value = {"values": []}
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         await bitbucket_list_prs("repo", state="MERGED", target_branch="main", source_branch="feat", author="John")
-    params = mc.bitbucket_get.call_args[1]["params"]
+    params = mc.get.call_args[1]["params"]
     assert "destination.branch.name" in params["q"]
     assert "source.branch.name" in params["q"]
     assert "author.display_name" in params["q"]
@@ -63,7 +63,7 @@ async def test_bitbucket_list_prs_with_filters():
 @pytest.mark.asyncio
 async def test_bitbucket_get_pr_success():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {
+    mc.get.return_value = {
         "id": 1, "title": "PR", "state": "OPEN",
         "author": {"display_name": "John"},
         "source": {"branch": {"name": "feat"}},
@@ -79,7 +79,7 @@ async def test_bitbucket_get_pr_success():
 @pytest.mark.asyncio
 async def test_bitbucket_get_pr_diff():
     mc, cfg = _patches()
-    mc.bitbucket_get_text.return_value = "diff --git a/f b/f"
+    mc.get_text.return_value = "diff --git a/f b/f"
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_get_pr_diff("repo", 1)
     assert result.startswith("diff")
@@ -88,7 +88,7 @@ async def test_bitbucket_get_pr_diff():
 @pytest.mark.asyncio
 async def test_bitbucket_list_pr_comments():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {
+    mc.get.return_value = {
         "values": [
             {"user": {"display_name": "John"}, "content": {"raw": "LGTM"}},
             {"user": {"display_name": "Bob"}, "content": {}},
@@ -103,7 +103,7 @@ async def test_bitbucket_list_pr_comments():
 @pytest.mark.asyncio
 async def test_bitbucket_create_pr_comment():
     mc, cfg = _patches()
-    mc.bitbucket_post.return_value = {"id": "c1"}
+    mc.post.return_value = {"id": "c1"}
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_create_pr_comment("repo", 1, "Nice")
     assert result == {"id": "c1"}
@@ -122,10 +122,10 @@ _PR_RESPONSE = {
 @pytest.mark.asyncio
 async def test_bitbucket_create_pr_basic():
     mc, cfg = _patches()
-    mc.bitbucket_post.return_value = _PR_RESPONSE
+    mc.post.return_value = _PR_RESPONSE
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_create_pr("repo", "My PR", "feat")
-    body = mc.bitbucket_post.call_args[1]["json"]
+    body = mc.post.call_args[1]["json"]
     assert body["source"] == {"branch": {"name": "feat"}}
     assert "reviewers" not in body
     assert result["id"] == 42
@@ -134,11 +134,11 @@ async def test_bitbucket_create_pr_basic():
 @pytest.mark.asyncio
 async def test_bitbucket_create_pr_with_reviewers():
     mc, cfg = _patches()
-    mc.bitbucket_post.return_value = _PR_RESPONSE
+    mc.post.return_value = _PR_RESPONSE
     uuids = ["{uuid-1}", "{uuid-2}"]
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_create_pr("repo", "My PR", "feat", reviewers=uuids)
-    body = mc.bitbucket_post.call_args[1]["json"]
+    body = mc.post.call_args[1]["json"]
     assert body["reviewers"] == [{"uuid": "{uuid-1}"}, {"uuid": "{uuid-2}"}]
     assert result["url"] == "https://bitbucket.org/test-ws/repo/pull-requests/42"
 
@@ -146,7 +146,7 @@ async def test_bitbucket_create_pr_with_reviewers():
 @pytest.mark.asyncio
 async def test_bitbucket_list_workspace_members():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {
+    mc.get.return_value = {
         "values": [
             {"user": {"display_name": "Alice", "uuid": "{uuid-a}"}},
             {"user": {"display_name": "Bob", "uuid": "{uuid-b}"}},
@@ -154,7 +154,7 @@ async def test_bitbucket_list_workspace_members():
     }
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_list_workspace_members()
-    mc.bitbucket_get.assert_called_once_with("/workspaces/test-ws/members")
+    mc.get.assert_called_once_with("/workspaces/test-ws/members")
     assert result == [
         {"display_name": "Alice", "uuid": "{uuid-a}"},
         {"display_name": "Bob", "uuid": "{uuid-b}"},
@@ -164,7 +164,7 @@ async def test_bitbucket_list_workspace_members():
 @pytest.mark.asyncio
 async def test_bitbucket_list_default_reviewers():
     mc, cfg = _patches()
-    mc.bitbucket_get.return_value = {
+    mc.get.return_value = {
         "values": [
             {"user": {"display_name": "Alice", "uuid": "{uuid-a}"}, "reviewer_type": "project", "type": "default_reviewer"},
             {"user": {"display_name": "Bob", "uuid": "{uuid-b}"}, "reviewer_type": "repository", "type": "default_reviewer"},
@@ -172,7 +172,7 @@ async def test_bitbucket_list_default_reviewers():
     }
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_list_default_reviewers("my-repo")
-    mc.bitbucket_get.assert_called_once_with("/repositories/test-ws/my-repo/effective-default-reviewers")
+    mc.get.assert_called_once_with("/repositories/test-ws/my-repo/effective-default-reviewers")
     assert result == [
         {"display_name": "Alice", "uuid": "{uuid-a}", "reviewer_type": "project"},
         {"display_name": "Bob", "uuid": "{uuid-b}", "reviewer_type": "repository"},
@@ -182,11 +182,11 @@ async def test_bitbucket_list_default_reviewers():
 @pytest.mark.asyncio
 async def test_bitbucket_update_pr_reviewers():
     mc, cfg = _patches()
-    mc.bitbucket_put.return_value = {}
+    mc.put.return_value = {}
     uuids = ["{uuid-1}", "{uuid-2}"]
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_update_pr_reviewers("repo", 5, uuids)
-    mc.bitbucket_put.assert_called_once_with(
+    mc.put.assert_called_once_with(
         "/repositories/test-ws/repo/pullrequests/5",
         json={"reviewers": [{"uuid": "{uuid-1}"}, {"uuid": "{uuid-2}"}]},
     )

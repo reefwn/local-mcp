@@ -1,16 +1,14 @@
 services:
-  dev:
+  mcp:
     build: .
-    container_name: local-mcp-dev
-    env_file: .env.dev
+    container_name: local-mcp
+    env_file: .env
     ports:
-      - "7373:7373"
-    restart: unless-stopped
-
-  debug:
-    build: .
-    container_name: local-mcp-debug
-    env_file: .env.debug
-    ports:
-      - "7374:7373"
+      - "7373:7373"  # atlassian (jira, confluence, bitbucket)
+      - "7374:7374"  # postgres
+      - "7375:7375"  # redis
+      - "7376:7376"  # kafka
+      - "7377:7377"  # figma
+      - "7378:7378"  # obsidian
+      - "7379:7379"  # elasticsearch + apm
     restart: unless-stopped
