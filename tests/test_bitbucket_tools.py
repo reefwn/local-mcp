@@ -1,11 +1,20 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from src.tools.bitbucket import (
-    bitbucket_list_repos, bitbucket_list_prs, bitbucket_get_pr,
-    bitbucket_get_pr_diff, bitbucket_list_pr_comments, bitbucket_create_pr_comment,
-    bitbucket_create_pr, bitbucket_list_workspace_members, bitbucket_list_default_reviewers,
-    bitbucket_update_pr_reviewers,
-)
+
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.bitbucket")
+bitbucket_list_repos = _tools["bitbucket_list_repos"]
+bitbucket_list_prs = _tools["bitbucket_list_prs"]
+bitbucket_get_pr = _tools["bitbucket_get_pr"]
+bitbucket_get_pr_diff = _tools["bitbucket_get_pr_diff"]
+bitbucket_list_pr_comments = _tools["bitbucket_list_pr_comments"]
+bitbucket_create_pr_comment = _tools["bitbucket_create_pr_comment"]
+bitbucket_create_pr = _tools["bitbucket_create_pr"]
+bitbucket_list_workspace_members = _tools["bitbucket_list_workspace_members"]
+bitbucket_list_default_reviewers = _tools["bitbucket_list_default_reviewers"]
+bitbucket_update_pr_reviewers = _tools["bitbucket_update_pr_reviewers"]
+bitbucket_get_pipeline_step_log = _tools["bitbucket_get_pipeline_step_log"]
 
 
 def _patches():
@@ -177,6 +186,30 @@ async def test_bitbucket_list_default_reviewers():
         {"display_name": "Alice", "uuid": "{uuid-a}", "reviewer_type": "project"},
         {"display_name": "Bob", "uuid": "{uuid-b}", "reviewer_type": "repository"},
     ]
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_create_pr_with_destination():
+    mc, cfg = _patches()
+    mc.post.return_value = _PR_RESPONSE
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        await bitbucket_create_pr("repo", "My PR", "feat", destination_branch="qa")
+    body = mc.post.call_args[1]["json"]
+    assert body["destination"] == {"branch": {"name": "qa"}}
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_get_pipeline_step_log():
+    mc, cfg = _patches()
+    mc.get_binary_text = AsyncMock(return_value="log output")
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_get_pipeline_step_log(
+            "repo", "263", "6769c35b-a50d-4b4a-a1a9-35606d88c3b4"
+        )
+    assert result == "log output"
+    mc.get_binary_text.assert_called_once_with(
+        "/repositories/test-ws/repo/pipelines/263/steps/{6769c35b-a50d-4b4a-a1a9-35606d88c3b4}/log"
+    )
 
 
 @pytest.mark.asyncio

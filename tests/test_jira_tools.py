@@ -1,6 +1,13 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from src.tools.jira import jira_search, jira_get_issue, jira_create_issue, jira_add_comment
+
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.jira")
+jira_search = _tools["jira_search"]
+jira_get_issue = _tools["jira_get_issue"]
+jira_create_issue = _tools["jira_create_issue"]
+jira_add_comment = _tools["jira_add_comment"]
 
 
 @pytest.mark.asyncio

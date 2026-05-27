@@ -5,6 +5,19 @@ from mcp.server.fastmcp import FastMCP
 
 from src.tools import config
 
+_client: httpx.AsyncClient | None = None
+
+
+def _get_client() -> httpx.AsyncClient:
+    global _client
+    if _client is None:
+        _client = httpx.AsyncClient(
+            base_url="https://api.figma.com/v1",
+            headers={"X-Figma-Token": config.figma_api_token},
+            timeout=30.0,
+        )
+    return _client
+
 
 def _parse_file_key(file_key_or_url: str) -> str:
     """Extract file key from a Figma URL or return as-is if already a key."""
@@ -13,12 +26,6 @@ def _parse_file_key(file_key_or_url: str) -> str:
 
 
 def register(mcp: FastMCP) -> None:
-    _client = httpx.AsyncClient(
-        base_url="https://api.figma.com/v1",
-        headers={"X-Figma-Token": config.figma_api_token},
-        timeout=30.0,
-    )
-
     @mcp.tool()
     async def figma_get_file(file_key: str, depth: int | None = None) -> dict:
         """Get a Figma file's structure and metadata. Accepts a file key or full Figma URL. Use depth to limit tree traversal (e.g. depth=1 for pages only)."""
@@ -26,7 +33,7 @@ def register(mcp: FastMCP) -> None:
         params = {}
         if depth is not None:
             params["depth"] = depth
-        r = await _client.get(f"/files/{key}", params=params)
+        r = await _get_client().get(f"/files/{key}", params=params)
         r.raise_for_status()
         data = r.json()
         return {
@@ -45,7 +52,7 @@ def register(mcp: FastMCP) -> None:
         params: dict = {"ids": ids}
         if depth is not None:
             params["depth"] = depth
-        r = await _client.get(f"/files/{key}/nodes", params=params)
+        r = await _get_client().get(f"/files/{key}/nodes", params=params)
         r.raise_for_status()
         return r.json().get("nodes", {})
 
@@ -53,7 +60,7 @@ def register(mcp: FastMCP) -> None:
     async def figma_get_images(file_key: str, ids: str, scale: float = 1, format: str = "png") -> dict:
         """Export Figma nodes as images. Returns a map of node IDs to image URLs. ids is comma-separated (e.g. '1:2,1:3'). format: png, jpg, svg, pdf."""
         key = _parse_file_key(file_key)
-        r = await _client.get(f"/images/{key}", params={"ids": ids, "scale": scale, "format": format})
+        r = await _get_client().get(f"/images/{key}", params={"ids": ids, "scale": scale, "format": format})
         r.raise_for_status()
         return r.json().get("images", {})
 
@@ -61,7 +68,7 @@ def register(mcp: FastMCP) -> None:
     async def figma_get_comments(file_key: str) -> list[dict]:
         """Get all comments on a Figma file."""
         key = _parse_file_key(file_key)
-        r = await _client.get(f"/files/{key}/comments")
+        r = await _get_client().get(f"/files/{key}/comments")
         r.raise_for_status()
         comments = r.json().get("comments", [])
         return [
@@ -85,6 +92,6 @@ def register(mcp: FastMCP) -> None:
             body["comment_id"] = comment_id
         if node_id:
             body["client_meta"] = {"node_id": node_id, "node_offset": {"x": 0, "y": 0}}
-        r = await _client.post(f"/files/{key}/comments", json=body)
+        r = await _get_client().post(f"/files/{key}/comments", json=body)
         r.raise_for_status()
         return r.json()

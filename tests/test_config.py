@@ -2,7 +2,13 @@ from src.config import Config
 
 
 def test_config_defaults():
-    config = Config(atlassian_domain="", jira_email="", enable_jira=False, enable_postgres=False)
+    config = Config(
+        atlassian_domain="",
+        jira_email="",
+        enable_jira=False,
+        enable_postgres=False,
+        kafka_ssl_enabled=False,
+    )
     assert config.atlassian_domain == ""
     assert config.jira_email == ""
     assert config.enable_jira is False

@@ -3,13 +3,14 @@ import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
-from src.tools.elasticsearch import (
-    elasticsearch_search,
-    elasticsearch_aggregate_errors,
-    elasticsearch_get_document,
-    elasticsearch_list_indices,
-    elasticsearch_trace_request,
-)
+from tests.conftest import load_tool_functions
+
+_tools = load_tool_functions("src.tools.elasticsearch")
+elasticsearch_search = _tools["elasticsearch_search"]
+elasticsearch_aggregate_errors = _tools["elasticsearch_aggregate_errors"]
+elasticsearch_get_document = _tools["elasticsearch_get_document"]
+elasticsearch_list_indices = _tools["elasticsearch_list_indices"]
+elasticsearch_trace_request = _tools["elasticsearch_trace_request"]
 
 
 @pytest.mark.asyncio
