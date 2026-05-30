@@ -9,28 +9,49 @@ def _serialize(rows: list[dict]) -> str:
     return json.dumps(rows, default=str, indent=2)
 
 
+def _db_name(db: str) -> str | None:
+    """Empty string means use POSTGRES_URL default database."""
+    return db.strip() or None
+
+
 def register(mcp: FastMCP) -> None:
     @mcp.tool()
-    async def pg_query(database: str | None = None, sql: str = "") -> str:
-        """Run a read-only SQL query against PostgreSQL and return results as JSON."""
-        rows = await pg.fetch(database, sql)
+    async def pg_query(sql: str, db: str = "") -> str:
+        """Run a read-only SQL query against PostgreSQL and return results as JSON.
+
+        Args:
+            sql: SQL query to run (read-only).
+            db: Database name. Leave empty to use the database from POSTGRES_URL.
+        """
+        rows = await pg.fetch(_db_name(db), sql)
         return _serialize(rows) or "No rows returned."
 
     @mcp.tool()
-    async def pg_list_tables(database: str | None = None, schema: str = "public") -> str:
-        """List all tables in a PostgreSQL schema."""
+    async def pg_list_tables(schema: str = "public", db: str = "") -> str:
+        """List all tables in a PostgreSQL schema.
+
+        Args:
+            schema: Schema name (default: public).
+            db: Database name. Leave empty to use the database from POSTGRES_URL.
+        """
         rows = await pg.fetch(
-            database,
+            _db_name(db),
             "SELECT table_name FROM information_schema.tables WHERE table_schema = $1 ORDER BY table_name",
             schema,
         )
         return "\n".join(r["table_name"] for r in rows) or "No tables found."
 
     @mcp.tool()
-    async def pg_describe_table(database: str | None = None, table_name: str = "", schema: str = "public") -> str:
-        """Describe columns of a PostgreSQL table (name, type, nullable, default)."""
+    async def pg_describe_table(table_name: str, schema: str = "public", db: str = "") -> str:
+        """Describe columns of a PostgreSQL table (name, type, nullable, default).
+
+        Args:
+            table_name: Table name.
+            schema: Schema name (default: public).
+            db: Database name. Leave empty to use the database from POSTGRES_URL.
+        """
         rows = await pg.fetch(
-            database,
+            _db_name(db),
             "SELECT column_name, data_type, is_nullable, column_default "
             "FROM information_schema.columns WHERE table_schema = $1 AND table_name = $2 "
             "ORDER BY ordinal_position",
@@ -40,10 +61,16 @@ def register(mcp: FastMCP) -> None:
         return _serialize(rows) or f"Table '{schema}.{table_name}' not found."
 
     @mcp.tool()
-    async def pg_list_indexes(database: str | None = None, table_name: str = "", schema: str = "public") -> str:
-        """List indexes on a PostgreSQL table."""
+    async def pg_list_indexes(table_name: str, schema: str = "public", db: str = "") -> str:
+        """List indexes on a PostgreSQL table.
+
+        Args:
+            table_name: Table name.
+            schema: Schema name (default: public).
+            db: Database name. Leave empty to use the database from POSTGRES_URL.
+        """
         rows = await pg.fetch(
-            database,
+            _db_name(db),
             "SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 ORDER BY indexname",
             schema,
             table_name,
