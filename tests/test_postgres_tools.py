@@ -15,9 +15,20 @@ async def test_pg_query_with_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"id": 1, "name": "John"}]
     with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_query("SELECT * FROM users")
+        result = await pg_query(sql="SELECT * FROM users")
     assert '"id": 1' in result
     assert '"name": "John"' in result
+    mock_pg.fetch.assert_called_once_with(None, "SELECT * FROM users")
+
+
+@pytest.mark.asyncio
+async def test_pg_query_with_db():
+    mock_pg = AsyncMock()
+    mock_pg.fetch.return_value = [{"id": 1}]
+    with patch("src.tools.postgres.pg", mock_pg):
+        result = await pg_query(sql="SELECT 1", db="order_engine")
+    assert '"id": 1' in result
+    mock_pg.fetch.assert_called_once_with("order_engine", "SELECT 1")
 
 
 @pytest.mark.asyncio
@@ -25,7 +36,7 @@ async def test_pg_query_no_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = []
     with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_query("SELECT * FROM empty")
+        result = await pg_query(sql="SELECT * FROM empty")
     assert result == "[]"
 
 
@@ -52,7 +63,7 @@ async def test_pg_describe_table_with_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"column_name": "id", "data_type": "integer", "is_nullable": "NO", "column_default": None}]
     with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_describe_table("users")
+        result = await pg_describe_table(table_name="users")
     assert '"column_name": "id"' in result
 
 
@@ -61,7 +72,7 @@ async def test_pg_describe_table_not_found():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = []
     with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_describe_table("nonexistent", schema="test")
+        result = await pg_describe_table(table_name="nonexistent", schema="test")
     assert result == "[]"  # _serialize([]) is truthy, so fallback doesn't trigger
 
 
@@ -70,7 +81,7 @@ async def test_pg_list_indexes_with_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"indexname": "users_pkey", "indexdef": "CREATE UNIQUE INDEX ..."}]
     with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_list_indexes("users")
+        result = await pg_list_indexes(table_name="users")
     assert '"indexname": "users_pkey"' in result
 
 
@@ -79,5 +90,5 @@ async def test_pg_list_indexes_no_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = []
     with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_list_indexes("t", schema="s")
+        result = await pg_list_indexes(table_name="t", schema="s")
     assert result == "[]"
