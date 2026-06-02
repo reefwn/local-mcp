@@ -4,10 +4,31 @@ from unittest.mock import AsyncMock, patch
 from tests.conftest import load_tool_functions
 
 _tools = load_tool_functions("src.tools.jira")
+jira_whoami = _tools["jira_whoami"]
 jira_search = _tools["jira_search"]
 jira_get_issue = _tools["jira_get_issue"]
 jira_create_issue = _tools["jira_create_issue"]
 jira_add_comment = _tools["jira_add_comment"]
+
+
+@pytest.mark.asyncio
+async def test_jira_whoami():
+    mock_client = AsyncMock()
+    mock_client.jira_get.return_value = {
+        "accountId": "abc123",
+        "displayName": "Jane Doe",
+        "emailAddress": "jane@example.com",
+        "active": True,
+    }
+    with patch("src.tools.jira.client", mock_client):
+        result = await jira_whoami()
+    assert result == {
+        "account_id": "abc123",
+        "display_name": "Jane Doe",
+        "email": "jane@example.com",
+        "active": True,
+    }
+    mock_client.jira_get.assert_called_once_with("/myself")
 
 
 @pytest.mark.asyncio

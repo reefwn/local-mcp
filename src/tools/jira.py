@@ -7,8 +7,23 @@ from src.tools import config, jira_cloud_client as client
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool()
+    async def jira_whoami() -> dict:
+        """Verify Jira API credentials and return the authenticated Atlassian account."""
+        data = await client.jira_get("/myself")
+        return {
+            "account_id": data.get("accountId"),
+            "display_name": data.get("displayName"),
+            "email": data.get("emailAddress"),
+            "active": data.get("active"),
+        }
+
+    @mcp.tool()
     async def jira_search(jql: str, max_results: int = 10) -> str:
-        """Search Jira issues using JQL query. Returns a list of matching issues with key, summary, and status."""
+        """Search Jira issues using JQL query. Returns a list of matching issues with key, summary, and status.
+
+        Jira rejects unbounded queries (e.g. bare `ORDER BY created DESC`); include a restriction such as
+        `project IS NOT EMPTY` or `assignee = currentUser()`.
+        """
         data = await client.jira_post("/search/jql", json={"jql": jql, "maxResults": max_results, "fields": ["summary", "status"]})
         issues = data.get("issues", [])
         return "\n".join(
