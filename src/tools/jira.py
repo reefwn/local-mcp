@@ -1,8 +1,21 @@
 import json
+from typing import Literal
 
 from mcp.server.fastmcp import FastMCP
 
+from src.jira.adf import markdown_to_adf, plain_text_adf
 from src.tools import config, jira_cloud_client as client
+
+
+def _comment_body(comment: str, comment_format: Literal["markdown", "plain", "adf"]) -> dict:
+    if comment_format == "plain":
+        return plain_text_adf(comment)
+    if comment_format == "adf":
+        content = json.loads(comment)
+        if not isinstance(content, list):
+            raise ValueError("ADF format requires a JSON array of content nodes")
+        return {"type": "doc", "version": 1, "content": content}
+    return markdown_to_adf(comment)
 
 
 def register(mcp: FastMCP) -> None:
@@ -62,24 +75,25 @@ def register(mcp: FastMCP) -> None:
             }
         }
         if description:
-            body["fields"]["description"] = {
-                "type": "doc",
-                "version": 1,
-                "content": [{"type": "paragraph", "content": [{"type": "text", "text": description}]}],
-            }
+            body["fields"]["description"] = markdown_to_adf(description)
         data = await client.jira_post("/issue", json=body)
         return f"Created {data['key']}: {summary}"
 
     @mcp.tool()
-    async def jira_add_comment(issue_key: str, comment: str) -> str:
-        """Add a comment to a Jira issue by key (e.g. PROJ-123)."""
-        body = {
-            "body": {
-                "type": "doc",
-                "version": 1,
-                "content": [{"type": "paragraph", "content": [{"type": "text", "text": comment}]}],
-            }
-        }
+    async def jira_add_comment(
+        issue_key: str,
+        comment: str,
+        comment_format: Literal["markdown", "plain", "adf"] = "markdown",
+    ) -> str:
+        """Add a comment to a Jira issue by key (e.g. PROJ-123).
+
+        comment_format:
+            markdown (default) — headings (## / ###), bullet/numbered lists, fenced code blocks,
+            **bold**, and `inline code` are converted to ADF for Jira rendering.
+            plain — single paragraph, no markdown interpretation (legacy behavior).
+            adf — comment is a JSON array of ADF content nodes (see Jira REST API).
+        """
+        body = {"body": _comment_body(comment, comment_format)}
         await client.jira_post(f"/issue/{issue_key}/comment", json=body)
         return f"Comment added to {issue_key}."
 

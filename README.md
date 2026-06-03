@@ -152,7 +152,7 @@ pytest
 | `jira_search` | Search issues with JQL |
 | `jira_get_issue` | Get issue details by key (includes custom fields) |
 | `jira_create_issue` | Create a new issue |
-| `jira_add_comment` | Add a comment to an issue |
+| `jira_add_comment` | Add a comment (markdown → ADF by default; optional `comment_format`: `plain`, `adf`) |
 | `jira_list_comments` | List all comments on an issue |
 | `jira_get_comment` | Get a specific comment by ID |
 | `jira_update_custom_field` | Update a custom field on an issue |
