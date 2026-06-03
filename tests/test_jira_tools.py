@@ -116,9 +116,35 @@ async def test_jira_create_issue_with_description():
 
 
 @pytest.mark.asyncio
-async def test_jira_add_comment():
+async def test_jira_add_comment_markdown():
     mock_client = AsyncMock()
     mock_client.jira_post.return_value = {}
     with patch("src.tools.jira.client", mock_client):
-        result = await jira_add_comment("TEST-1", "A comment")
+        result = await jira_add_comment("TEST-1", "## Title\n\n- a\n- b")
     assert result == "Comment added to TEST-1."
+    body = mock_client.jira_post.call_args[1]["json"]["body"]
+    types = [n["type"] for n in body["content"]]
+    assert types == ["heading", "bulletList"]
+
+
+@pytest.mark.asyncio
+async def test_jira_add_comment_plain():
+    mock_client = AsyncMock()
+    mock_client.jira_post.return_value = {}
+    with patch("src.tools.jira.client", mock_client):
+        await jira_add_comment("TEST-1", "## not a heading", comment_format="plain")
+    body = mock_client.jira_post.call_args[1]["json"]["body"]
+    assert body["content"] == [
+        {"type": "paragraph", "content": [{"type": "text", "text": "## not a heading"}]}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_jira_create_issue_description_uses_markdown_adf():
+    mock_client = AsyncMock()
+    mock_client.jira_post.return_value = {"key": "TEST-5"}
+    with patch("src.tools.jira.client", mock_client):
+        await jira_create_issue("TEST", "Issue", description="## Details\n\n- item")
+    desc = mock_client.jira_post.call_args[1]["json"]["fields"]["description"]
+    types = [n["type"] for n in desc["content"]]
+    assert types == ["heading", "bulletList"]
