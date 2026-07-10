@@ -343,6 +343,13 @@ def register(mcp: FastMCP) -> None:
         ]
 
     @mcp.tool()
+    async def bitbucket_decline_pr(repo_slug: str, pr_id: int) -> str:
+        """Decline (discard) an open pull request."""
+        ws = config.bitbucket_workspace
+        await client.post(f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/decline")
+        return f"PR #{pr_id} has been declined."
+
+    @mcp.tool()
     async def bitbucket_list_default_reviewers(repo_slug: str) -> list[dict]:
         """List effective default reviewers for a repository. Includes both repo-level and project-inherited reviewers with their UUIDs."""
         ws = config.bitbucket_workspace
