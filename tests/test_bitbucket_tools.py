@@ -15,6 +15,7 @@ bitbucket_list_workspace_members = _tools["bitbucket_list_workspace_members"]
 bitbucket_list_default_reviewers = _tools["bitbucket_list_default_reviewers"]
 bitbucket_update_pr_reviewers = _tools["bitbucket_update_pr_reviewers"]
 bitbucket_get_pipeline_step_log = _tools["bitbucket_get_pipeline_step_log"]
+bitbucket_decline_pr = _tools["bitbucket_decline_pr"]
 
 
 def _patches():
@@ -224,3 +225,14 @@ async def test_bitbucket_update_pr_reviewers():
         json={"reviewers": [{"uuid": "{uuid-1}"}, {"uuid": "{uuid-2}"}]},
     )
     assert "updated" in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_decline_pr():
+    mc, cfg = _patches()
+    mc.post.return_value = {}
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_decline_pr("repo", 42)
+    mc.post.assert_called_once_with("/repositories/test-ws/repo/pullrequests/42/decline")
+    assert "42" in result
+    assert "declined" in result
