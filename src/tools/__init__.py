@@ -5,11 +5,16 @@ config = Config()
 # Initialize clients only when enabled
 jira_cloud_client = None
 bitbucket_client = None
-postgres_client = None
-redis_client = None
 kafka_client = None
 obsidian_client = None
-elasticsearch_client = None
+
+# Per-environment client registries: {"dev": Client, "qa": Client, "uat": Client, "prod": Client}
+redis_clients: dict[str, "RedisClient"] = {}
+elasticsearch_clients: dict[str, "ElasticsearchClient"] = {}
+
+# Per-(host, environment) PostgreSQL client registry, e.g. {("microservices", "dev"): Client, ...}
+# Hosts are open-ended — discovered from whichever POSTGRES_URL_<HOST>_<ENV> vars are set.
+postgres_clients: dict[tuple[str, str], "PostgresClient"] = {}
 
 if config.enable_jira or config.enable_confluence:
     from src.clients.atlassian import JiraCloudClient
@@ -23,11 +28,18 @@ if config.enable_bitbucket:
 
 if config.enable_postgres:
     from src.clients.postgres import PostgresClient
-    postgres_client = PostgresClient(config.postgres_url)
+
+    for _host, _env_urls in config.postgres_host_urls.items():
+        for _env, _url in _env_urls.items():
+            if _url:
+                postgres_clients[(_host, _env)] = PostgresClient(_url)
 
 if config.enable_redis:
     from src.clients.redis import RedisClient
-    redis_client = RedisClient(config.redis_url)
+
+    for _env, _url in config.redis_urls.items():
+        if _url:
+            redis_clients[_env] = RedisClient(_url)
 
 if config.enable_kafka:
     from src.clients.kafka import KafkaClient
@@ -39,9 +51,38 @@ if config.enable_obsidian:
 
 if config.enable_elasticsearch:
     from src.clients.elasticsearch import ElasticsearchClient
-    elasticsearch_client = ElasticsearchClient(
-        url=config.elasticsearch_url,
-        api_key=config.elasticsearch_api_key,
-        username=config.elasticsearch_username,
-        password=config.elasticsearch_password,
-    )
+
+    for _env, _url in config.elasticsearch_urls.items():
+        if _url:
+            elasticsearch_clients[_env] = ElasticsearchClient(
+                url=_url,
+                api_key=config.elasticsearch_api_keys.get(_env, ""),
+                username=config.elasticsearch_usernames.get(_env, ""),
+                password=config.elasticsearch_passwords.get(_env, ""),
+            )
+
+
+def resolve_client(clients: dict, environment: str, tool_prefix: str):
+    """Look up a per-environment client, raising a clear error if not configured."""
+    client = clients.get(environment)
+    if client is None:
+        available = ", ".join(sorted(clients.keys())) or "none"
+        raise ValueError(
+            f"No {tool_prefix} client configured for environment '{environment}'. "
+            f"Available environments: {available}."
+        )
+    return client
+
+
+def resolve_postgres_client(host: str, environment: str) -> "PostgresClient":
+    """Look up a PostgreSQL client by (host, environment), raising a clear error if not configured."""
+    client = postgres_clients.get((host, environment))
+    if client is None:
+        available = ", ".join(
+            f"{h}/{e}" for h, e in sorted(postgres_clients.keys())
+        ) or "none"
+        raise ValueError(
+            f"No postgres client configured for host '{host}' and environment '{environment}'. "
+            f"Available host/environment combos: {available}."
+        )
+    return client

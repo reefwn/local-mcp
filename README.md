@@ -64,17 +64,9 @@ cp .env.example .env
 
 > Jira and Confluence typically share one Atlassian Cloud API token. Bitbucket uses its own credentials and is only initialized when `ENABLE_BITBUCKET=true`.
 
-**PostgreSQL:**
+**PostgreSQL supports multiple named hosts, each with its own credentials** (e.g. `microservices`, `merchant`, `openapipartner`), each available per environment (`dev`, `qa`, `uat`, `prod`) — see [PostgreSQL: multi-host support](#postgresql-multi-host-support) below.
 
-| Variable | Example |
-|----------|---------|
-| `POSTGRES_URL` | `postgresql://user:password@localhost:5432/dbname` |
-
-**Redis:**
-
-| Variable | Example |
-|----------|---------|
-| `REDIS_URL` | `redis://localhost:6379/0` |
+**Redis and Elasticsearch tools support multiple environments** (`dev`, `qa`, `uat`, `prod`) selectable per call via an `environment` parameter — see [Multi-environment support](#multi-environment-support) below.
 
 **Kafka:**
 
@@ -100,16 +92,60 @@ cp .env.example .env
 
 > Requires the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin.
 
-**Elasticsearch:**
+**Elasticsearch / APM:** configured per environment — see [Multi-environment support](#multi-environment-support).
+
+## PostgreSQL: multi-host support
+
+PostgreSQL is modeled as a set of independently credentialed **hosts** (e.g. `microservices`, `merchant`, `openapipartner`), each available per **environment** (`dev`, `qa`, `uat`, `prod`). Every `pg_*` tool call requires `host` and `environment`; the MCP server resolves the matching connection string server-side using `POSTGRES_URL_<HOST>_<ENV>` env vars — **credentials never leave the MCP server or get exposed to the calling agent.**
+
+Hosts are open-ended: adding a new host is just setting new `POSTGRES_URL_<NEWHOST>_<ENV>` vars — no code changes needed. Only host/environment combos with a non-empty URL are available; calling `pg_*` with an unconfigured combo returns a clear error listing which combos exist.
+
+| Variable pattern | Example |
+|-------------------|---------|
+| `POSTGRES_URL_<HOST>_DEV` | `POSTGRES_URL_MICROSERVICES_DEV=postgresql://user:password@microservices-dev-host:5432/dbname` |
+| `POSTGRES_URL_<HOST>_QA` | `POSTGRES_URL_MERCHANT_QA=postgresql://user:password@merchant-qa-host:5432/dbname` |
+| `POSTGRES_URL_<HOST>_UAT` | `POSTGRES_URL_OPENAPIPARTNER_UAT=postgresql://user:password@openapipartner-uat-host:5432/dbname` |
+| `POSTGRES_URL_<HOST>_PROD` | `POSTGRES_URL_MICROSERVICES_PROD=postgresql://user:password@microservices-prod-host:5432/dbname` |
+
+The optional `db` parameter on `pg_*` tools still lets the agent switch databases within the same host (default: the database from that host's connection URL).
+
+Example tool call:
+
+```json
+{ "tool": "pg_query", "arguments": { "sql": "SELECT 1", "host": "microservices", "environment": "dev" } }
+```
+
+## Multi-environment support
+
+`redis_*`, `elasticsearch_*`, and `apm_*` tools require an `environment` parameter (`dev`, `qa`, `uat`, or `prod`) on every call, letting the agent target a different environment per request without restarting the server. There is no default — callers must always pass it explicitly.
+
+Configure credentials per environment using suffixed variables. Only environments with a non-empty URL are available; calling a tool with an unconfigured `environment` returns a clear error listing which environments are available.
+
+**Redis:**
+
+| Variable | Example |
+|----------|---------|
+| `REDIS_URL_DEV` | `redis://dev-host:6379/0` |
+| `REDIS_URL_QA` | `redis://qa-host:6379/0` |
+| `REDIS_URL_UAT` | `redis://uat-host:6379/0` |
+| `REDIS_URL_PROD` | `redis://prod-host:6379/0` |
+
+**Elasticsearch / APM:** (repeat suffix pattern per environment: `_DEV`, `_QA`, `_UAT`, `_PROD`)
 
 | Variable | How to get it |
 |----------|---------------|
-| `ELASTICSEARCH_URL` | e.g. `http://localhost:9200` |
-| `ELASTICSEARCH_API_KEY` | API key (optional) |
-| `ELASTICSEARCH_USERNAME` | Username for Basic Auth (optional) |
-| `ELASTICSEARCH_PASSWORD` | Password for Basic Auth (optional) |
+| `ELASTICSEARCH_URL_<ENV>` | e.g. `http://uat-host:9200` |
+| `ELASTICSEARCH_API_KEY_<ENV>` | API key (optional) |
+| `ELASTICSEARCH_USERNAME_<ENV>` | Username for Basic Auth (optional) |
+| `ELASTICSEARCH_PASSWORD_<ENV>` | Password for Basic Auth (optional) |
 
-> Use either API key or username/password, not both.
+> Use either API key or username/password per environment, not both.
+
+Example tool call targeting dev explicitly:
+
+```json
+{ "tool": "elasticsearch_search", "arguments": { "index": "logs-*", "query": "error", "environment": "dev" } }
+```
 
 ## Run locally
 

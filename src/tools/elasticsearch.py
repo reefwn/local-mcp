@@ -5,7 +5,11 @@ from datetime import datetime, timedelta
 
 from mcp.server.fastmcp import FastMCP
 
-from src.tools import elasticsearch_client as es
+from src.tools import elasticsearch_clients, resolve_client
+
+
+def _client(environment: str):
+    return resolve_client(elasticsearch_clients, environment, "elasticsearch")
 
 
 def register(mcp: FastMCP) -> None:
@@ -13,6 +17,7 @@ def register(mcp: FastMCP) -> None:
     async def elasticsearch_search(
         index: str,
         query: str,
+        environment: str,
         size: int = 10,
         time_field: str = "@timestamp",
         hours_ago: int = 24,
@@ -23,6 +28,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             index: Index pattern to search (e.g., 'logs-*', 'filebeat-*')
             query: Query string in Lucene syntax (e.g., 'error AND status:500')
+            environment: Target environment (dev, qa, uat, prod).
             size: Number of results to return (default: 10)
             time_field: Timestamp field name (default: @timestamp)
             hours_ago: Search logs from this many hours ago (default: 24)
@@ -41,12 +47,13 @@ def register(mcp: FastMCP) -> None:
             "size": size,
             "sort": [{time_field: {"order": "desc"}}],
         }
-        result = await es.search(index, body)
+        result = await _client(environment).search(index, body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
     async def elasticsearch_aggregate_errors(
         index: str,
+        environment: str,
         error_field: str = "message",
         time_field: str = "@timestamp",
         hours_ago: int = 24,
@@ -57,6 +64,7 @@ def register(mcp: FastMCP) -> None:
 
         Args:
             index: Index pattern to search (e.g., 'logs-*')
+            environment: Target environment (dev, qa, uat, prod).
             error_field: Field containing error messages (default: message)
             time_field: Timestamp field name (default: @timestamp)
             hours_ago: Analyze logs from this many hours ago (default: 24)
@@ -76,31 +84,37 @@ def register(mcp: FastMCP) -> None:
             "size": 0,
             "aggs": {"error_patterns": {"terms": {"field": f"{error_field}.keyword", "size": top_n}}},
         }
-        result = await es.search(index, body)
+        result = await _client(environment).search(index, body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
-    async def elasticsearch_get_document(index: str, doc_id: str) -> str:
+    async def elasticsearch_get_document(index: str, doc_id: str, environment: str) -> str:
         """
         Get a specific log document by ID.
 
         Args:
             index: Index name
             doc_id: Document ID
+            environment: Target environment (dev, qa, uat, prod).
         """
-        result = await es.get_document(index, doc_id)
+        result = await _client(environment).get_document(index, doc_id)
         return json.dumps(result, indent=2)
 
     @mcp.tool()
-    async def elasticsearch_list_indices() -> str:
-        """List all Elasticsearch indices with stats."""
-        indices = await es.list_indices()
+    async def elasticsearch_list_indices(environment: str) -> str:
+        """List all Elasticsearch indices with stats.
+
+        Args:
+            environment: Target environment (dev, qa, uat, prod).
+        """
+        indices = await _client(environment).list_indices()
         return json.dumps(indices, indent=2)
 
     @mcp.tool()
     async def elasticsearch_trace_request(
         index: str,
         trace_id: str,
+        environment: str,
         trace_field: str = "trace.id",
         time_field: str = "@timestamp",
     ) -> str:
@@ -110,6 +124,7 @@ def register(mcp: FastMCP) -> None:
         Args:
             index: Index pattern to search
             trace_id: Trace ID to follow
+            environment: Target environment (dev, qa, uat, prod).
             trace_field: Field containing trace ID (default: trace.id)
             time_field: Timestamp field for sorting (default: @timestamp)
         """
@@ -118,5 +133,5 @@ def register(mcp: FastMCP) -> None:
             "size": 100,
             "sort": [{time_field: {"order": "asc"}}],
         }
-        result = await es.search(index, body)
+        result = await _client(environment).search(index, body)
         return json.dumps(result, default=str, indent=2)
