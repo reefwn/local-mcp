@@ -1,9 +1,40 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from dotenv import load_dotenv
 
 load_dotenv()
+
+ENVIRONMENTS = ["dev", "qa", "uat", "prod"]
+
+
+def _env_map(prefix: str) -> dict[str, str]:
+    """Build a per-environment value map, e.g. POSTGRES_URL_DEV, POSTGRES_URL_QA, ..."""
+    return {env: os.getenv(f"{prefix}_{env.upper()}", "") for env in ENVIRONMENTS}
+
+
+def _postgres_host_urls() -> dict[str, dict[str, str]]:
+    """
+    Discover POSTGRES_URL_<HOST>_<ENV> env vars and build a {host: {environment: url}} map.
+
+    Open-ended: any <HOST> is accepted as long as the var ends with a known
+    environment suffix (_DEV, _QA, _UAT, _PROD), so new hosts can be added purely
+    via env vars without code changes.
+    """
+    hosts: dict[str, dict[str, str]] = {}
+    prefix = "POSTGRES_URL_"
+    for key, value in os.environ.items():
+        if not value or not key.startswith(prefix):
+            continue
+        remainder = key[len(prefix):]
+        for env in ENVIRONMENTS:
+            suffix = f"_{env.upper()}"
+            if remainder.endswith(suffix):
+                host = remainder[: -len(suffix)].lower()
+                if host:
+                    hosts.setdefault(host, {})[env] = value
+                break
+    return hosts
 
 
 @dataclass
@@ -19,23 +50,29 @@ class Config:
     enable_jira: bool = os.getenv("ENABLE_JIRA", "false").lower() == "true"
     enable_confluence: bool = os.getenv("ENABLE_CONFLUENCE", "false").lower() == "true"
     enable_bitbucket: bool = os.getenv("ENABLE_BITBUCKET", "false").lower() == "true"
+
     enable_postgres: bool = os.getenv("ENABLE_POSTGRES", "false").lower() == "true"
-    postgres_url: str = os.getenv("POSTGRES_URL", "")
+    postgres_host_urls: dict[str, dict[str, str]] = field(default_factory=_postgres_host_urls)
+
     enable_redis: bool = os.getenv("ENABLE_REDIS", "false").lower() == "true"
-    redis_url: str = os.getenv("REDIS_URL", "")
+    redis_urls: dict[str, str] = field(default_factory=lambda: _env_map("REDIS_URL"))
+
     enable_kafka: bool = os.getenv("ENABLE_KAFKA", "false").lower() == "true"
     kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
     kafka_ssl_enabled: bool = os.getenv("KAFKA_SSL_ENABLED", "false").lower() == "true"
+
     enable_figma: bool = os.getenv("ENABLE_FIGMA", "false").lower() == "true"
     figma_api_token: str = os.getenv("FIGMA_API_TOKEN", "")
+
     enable_obsidian: bool = os.getenv("ENABLE_OBSIDIAN", "false").lower() == "true"
     obsidian_api_key: str = os.getenv("OBSIDIAN_API_KEY", "")
     obsidian_url: str = os.getenv("OBSIDIAN_URL", "https://127.0.0.1:27124")
+
     enable_elasticsearch: bool = os.getenv("ENABLE_ELASTICSEARCH", "false").lower() == "true"
-    elasticsearch_url: str = os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
-    elasticsearch_api_key: str = os.getenv("ELASTICSEARCH_API_KEY", "")
-    elasticsearch_username: str = os.getenv("ELASTICSEARCH_USERNAME", "")
-    elasticsearch_password: str = os.getenv("ELASTICSEARCH_PASSWORD", "")
+    elasticsearch_urls: dict[str, str] = field(default_factory=lambda: _env_map("ELASTICSEARCH_URL"))
+    elasticsearch_api_keys: dict[str, str] = field(default_factory=lambda: _env_map("ELASTICSEARCH_API_KEY"))
+    elasticsearch_usernames: dict[str, str] = field(default_factory=lambda: _env_map("ELASTICSEARCH_USERNAME"))
+    elasticsearch_passwords: dict[str, str] = field(default_factory=lambda: _env_map("ELASTICSEARCH_PASSWORD"))
 
     @property
     def jira_base_url(self) -> str:
@@ -48,3 +85,7 @@ class Config:
     @property
     def bitbucket_base_url(self) -> str:
         return "https://api.bitbucket.org/2.0"
+
+    def configured_environments(self, urls: dict[str, str]) -> list[str]:
+        """Return environments that have a non-empty URL configured."""
+        return [env for env, url in urls.items() if url]

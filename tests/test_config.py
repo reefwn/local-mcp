@@ -1,3 +1,5 @@
+import os
+
 from src.config import Config
 
 
@@ -21,3 +23,30 @@ def test_config_properties():
     assert config.jira_base_url == "https://test.atlassian.net/rest/api/3"
     assert config.confluence_base_url == "https://test.atlassian.net/wiki/api/v2"
     assert config.bitbucket_base_url == "https://api.bitbucket.org/2.0"
+
+
+def test_config_per_environment_urls():
+    config = Config(
+        redis_urls={"dev": "redis://dev", "qa": "", "uat": "redis://uat", "prod": ""},
+    )
+    assert config.configured_environments(config.redis_urls) == ["dev", "uat"]
+
+
+def test_config_postgres_host_urls_discovery(monkeypatch):
+    # Isolate from any real POSTGRES_URL_* vars loaded from a local .env file.
+    for key in list(os.environ):
+        if key.startswith("POSTGRES_URL_"):
+            monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setenv("POSTGRES_URL_MICROSERVICES_DEV", "postgresql://dev-microservices")
+    monkeypatch.setenv("POSTGRES_URL_MICROSERVICES_UAT", "postgresql://uat-microservices")
+    monkeypatch.setenv("POSTGRES_URL_MERCHANT_QA", "postgresql://qa-merchant")
+
+    config = Config()
+
+    assert config.postgres_host_urls["microservices"] == {
+        "dev": "postgresql://dev-microservices",
+        "uat": "postgresql://uat-microservices",
+    }
+    assert config.postgres_host_urls["merchant"] == {"qa": "postgresql://qa-merchant"}
+    assert "openapipartner" not in config.postgres_host_urls

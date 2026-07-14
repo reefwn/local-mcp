@@ -5,12 +5,17 @@ from datetime import datetime, timedelta
 
 from mcp.server.fastmcp import FastMCP
 
-from src.tools import elasticsearch_client as es
+from src.tools import elasticsearch_clients, resolve_client
+
+
+def _client(environment: str):
+    return resolve_client(elasticsearch_clients, environment, "elasticsearch")
 
 
 def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def apm_search_traces(
+        environment: str,
         service_name: str = "",
         transaction_type: str = "",
         min_duration_ms: int = 0,
@@ -21,6 +26,7 @@ def register(mcp: FastMCP) -> None:
         Search APM traces by service, transaction type, or duration.
 
         Args:
+            environment: Target environment (dev, qa, uat, prod).
             service_name: Filter by service name (optional)
             transaction_type: Filter by transaction type like 'request' (optional)
             min_duration_ms: Minimum transaction duration in milliseconds (optional)
@@ -44,27 +50,29 @@ def register(mcp: FastMCP) -> None:
             "size": size,
             "sort": [{"transaction.duration.us": {"order": "desc"}}],
         }
-        result = await es.search("apm-*", body)
+        result = await _client(environment).search("apm-*", body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
-    async def apm_get_trace(trace_id: str) -> str:
+    async def apm_get_trace(trace_id: str, environment: str) -> str:
         """
         Get full trace details with all spans.
 
         Args:
             trace_id: Trace ID to retrieve
+            environment: Target environment (dev, qa, uat, prod).
         """
         body = {
             "query": {"term": {"trace.id": trace_id}},
             "size": 1000,
             "sort": [{"@timestamp": {"order": "asc"}}],
         }
-        result = await es.search("apm-*", body)
+        result = await _client(environment).search("apm-*", body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
     async def apm_search_errors(
+        environment: str,
         service_name: str = "",
         error_message: str = "",
         exception_type: str = "",
@@ -75,6 +83,7 @@ def register(mcp: FastMCP) -> None:
         Search APM errors by service, message, or exception type.
 
         Args:
+            environment: Target environment (dev, qa, uat, prod).
             service_name: Filter by service name (optional)
             error_message: Search in error message (optional)
             exception_type: Filter by exception type (optional)
@@ -98,27 +107,29 @@ def register(mcp: FastMCP) -> None:
             "size": size,
             "sort": [{"@timestamp": {"order": "desc"}}],
         }
-        result = await es.search("apm-*", body)
+        result = await _client(environment).search("apm-*", body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
-    async def apm_get_error(error_id: str) -> str:
+    async def apm_get_error(error_id: str, environment: str) -> str:
         """
         Get full error details with stack trace.
 
         Args:
             error_id: Error ID to retrieve
+            environment: Target environment (dev, qa, uat, prod).
         """
         body = {"query": {"term": {"error.id": error_id}}}
-        result = await es.search("apm-*", body)
+        result = await _client(environment).search("apm-*", body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
-    async def apm_list_services(hours_ago: int = 1) -> str:
+    async def apm_list_services(environment: str, hours_ago: int = 1) -> str:
         """
         List all services with recent activity.
 
         Args:
+            environment: Target environment (dev, qa, uat, prod).
             hours_ago: Look for services active in last N hours (default: 1)
         """
         now = datetime.utcnow()
@@ -134,16 +145,19 @@ def register(mcp: FastMCP) -> None:
             "size": 0,
             "aggs": {"services": {"terms": {"field": "service.name", "size": 100}}},
         }
-        result = await es.search("apm-*", body)
+        result = await _client(environment).search("apm-*", body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
-    async def apm_get_service_metrics(service_name: str, hours_ago: int = 1) -> str:
+    async def apm_get_service_metrics(
+        service_name: str, environment: str, hours_ago: int = 1
+    ) -> str:
         """
         Get service metrics: throughput, latency, error rate.
 
         Args:
             service_name: Service name
+            environment: Target environment (dev, qa, uat, prod).
             hours_ago: Analyze metrics from last N hours (default: 1)
         """
         now = datetime.utcnow()
@@ -173,11 +187,12 @@ def register(mcp: FastMCP) -> None:
                 },
             },
         }
-        result = await es.search("apm-*", body)
+        result = await _client(environment).search("apm-*", body)
         return json.dumps(result, default=str, indent=2)
 
     @mcp.tool()
     async def apm_find_slow_transactions(
+        environment: str,
         service_name: str = "",
         min_duration_ms: int = 1000,
         hours_ago: int = 1,
@@ -187,6 +202,7 @@ def register(mcp: FastMCP) -> None:
         Find slow transactions exceeding duration threshold.
 
         Args:
+            environment: Target environment (dev, qa, uat, prod).
             service_name: Filter by service name (optional)
             min_duration_ms: Minimum duration in milliseconds (default: 1000)
             hours_ago: Search from last N hours (default: 1)
@@ -206,5 +222,5 @@ def register(mcp: FastMCP) -> None:
             "size": size,
             "sort": [{"transaction.duration.us": {"order": "desc"}}],
         }
-        result = await es.search("apm-*", body)
+        result = await _client(environment).search("apm-*", body)
         return json.dumps(result, default=str, indent=2)

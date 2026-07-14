@@ -10,12 +10,16 @@ pg_describe_table = _tools["pg_describe_table"]
 pg_list_indexes = _tools["pg_list_indexes"]
 
 
+def _patched(mock_pg, host="microservices", environment="uat"):
+    return patch("src.tools.postgres_clients", {(host, environment): mock_pg})
+
+
 @pytest.mark.asyncio
 async def test_pg_query_with_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"id": 1, "name": "John"}]
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_query(sql="SELECT * FROM users")
+    with _patched(mock_pg):
+        result = await pg_query(sql="SELECT * FROM users", host="microservices", environment="uat")
     assert '"id": 1' in result
     assert '"name": "John"' in result
     mock_pg.fetch.assert_called_once_with(None, "SELECT * FROM users")
@@ -25,8 +29,8 @@ async def test_pg_query_with_results():
 async def test_pg_query_with_db():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"id": 1}]
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_query(sql="SELECT 1", db="order_engine")
+    with _patched(mock_pg):
+        result = await pg_query(sql="SELECT 1", host="microservices", environment="uat", db="order_engine")
     assert '"id": 1' in result
     mock_pg.fetch.assert_called_once_with("order_engine", "SELECT 1")
 
@@ -35,17 +39,38 @@ async def test_pg_query_with_db():
 async def test_pg_query_no_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = []
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_query(sql="SELECT * FROM empty")
+    with _patched(mock_pg):
+        result = await pg_query(sql="SELECT * FROM empty", host="microservices", environment="uat")
     assert result == "[]"
+
+
+@pytest.mark.asyncio
+async def test_pg_query_unknown_host_environment():
+    with patch("src.tools.postgres_clients", {}):
+        with pytest.raises(
+            ValueError,
+            match="No postgres client configured for host 'merchant' and environment 'dev'",
+        ):
+            await pg_query(sql="SELECT 1", host="merchant", environment="dev")
+
+
+@pytest.mark.asyncio
+async def test_pg_query_wrong_environment_for_host():
+    mock_pg = AsyncMock()
+    with _patched(mock_pg, host="microservices", environment="uat"):
+        with pytest.raises(
+            ValueError,
+            match="No postgres client configured for host 'microservices' and environment 'prod'",
+        ):
+            await pg_query(sql="SELECT 1", host="microservices", environment="prod")
 
 
 @pytest.mark.asyncio
 async def test_pg_list_tables_with_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"table_name": "users"}, {"table_name": "orders"}]
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_list_tables()
+    with _patched(mock_pg):
+        result = await pg_list_tables(host="microservices", environment="uat")
     assert result == "users\norders"
 
 
@@ -53,8 +78,8 @@ async def test_pg_list_tables_with_results():
 async def test_pg_list_tables_no_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = []
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_list_tables()
+    with _patched(mock_pg):
+        result = await pg_list_tables(host="microservices", environment="uat")
     assert result == "No tables found."
 
 
@@ -62,8 +87,8 @@ async def test_pg_list_tables_no_results():
 async def test_pg_describe_table_with_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"column_name": "id", "data_type": "integer", "is_nullable": "NO", "column_default": None}]
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_describe_table(table_name="users")
+    with _patched(mock_pg):
+        result = await pg_describe_table(table_name="users", host="microservices", environment="uat")
     assert '"column_name": "id"' in result
 
 
@@ -71,8 +96,10 @@ async def test_pg_describe_table_with_results():
 async def test_pg_describe_table_not_found():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = []
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_describe_table(table_name="nonexistent", schema="test")
+    with _patched(mock_pg):
+        result = await pg_describe_table(
+            table_name="nonexistent", host="microservices", environment="uat", schema="test"
+        )
     assert result == "[]"  # _serialize([]) is truthy, so fallback doesn't trigger
 
 
@@ -80,8 +107,8 @@ async def test_pg_describe_table_not_found():
 async def test_pg_list_indexes_with_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = [{"indexname": "users_pkey", "indexdef": "CREATE UNIQUE INDEX ..."}]
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_list_indexes(table_name="users")
+    with _patched(mock_pg):
+        result = await pg_list_indexes(table_name="users", host="microservices", environment="uat")
     assert '"indexname": "users_pkey"' in result
 
 
@@ -89,6 +116,6 @@ async def test_pg_list_indexes_with_results():
 async def test_pg_list_indexes_no_results():
     mock_pg = AsyncMock()
     mock_pg.fetch.return_value = []
-    with patch("src.tools.postgres.pg", mock_pg):
-        result = await pg_list_indexes(table_name="t", schema="s")
+    with _patched(mock_pg):
+        result = await pg_list_indexes(table_name="t", host="microservices", environment="uat", schema="s")
     assert result == "[]"
