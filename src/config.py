@@ -13,6 +13,14 @@ def _env_map(prefix: str) -> dict[str, str]:
     return {env: os.getenv(f"{prefix}_{env.upper()}", "") for env in ENVIRONMENTS}
 
 
+def _env_bool_map(prefix: str) -> dict[str, bool]:
+    """Build a per-environment boolean map from suffixed environment variables."""
+    return {
+        env: os.getenv(f"{prefix}_{env.upper()}", "false").lower() == "true"
+        for env in ENVIRONMENTS
+    }
+
+
 def _postgres_host_urls() -> dict[str, dict[str, str]]:
     """
     Discover POSTGRES_URL_<HOST>_<ENV> env vars and build a {host: {environment: url}} map.
@@ -58,8 +66,12 @@ class Config:
     redis_urls: dict[str, str] = field(default_factory=lambda: _env_map("REDIS_URL"))
 
     enable_kafka: bool = os.getenv("ENABLE_KAFKA", "false").lower() == "true"
-    kafka_bootstrap_servers: str = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "")
-    kafka_ssl_enabled: bool = os.getenv("KAFKA_SSL_ENABLED", "false").lower() == "true"
+    kafka_bootstrap_servers: dict[str, str] = field(
+        default_factory=lambda: _env_map("KAFKA_BOOTSTRAP_SERVERS")
+    )
+    kafka_ssl_enabled: dict[str, bool] = field(
+        default_factory=lambda: _env_bool_map("KAFKA_SSL_ENABLED")
+    )
 
     enable_figma: bool = os.getenv("ENABLE_FIGMA", "false").lower() == "true"
     figma_api_token: str = os.getenv("FIGMA_API_TOKEN", "")

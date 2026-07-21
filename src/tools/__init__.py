@@ -5,11 +5,11 @@ config = Config()
 # Initialize clients only when enabled
 jira_cloud_client = None
 bitbucket_client = None
-kafka_client = None
 obsidian_client = None
 
 # Per-environment client registries: {"dev": Client, "qa": Client, "uat": Client, "prod": Client}
 redis_clients: dict[str, "RedisClient"] = {}
+kafka_clients: dict[str, "KafkaClient"] = {}
 elasticsearch_clients: dict[str, "ElasticsearchClient"] = {}
 
 # Per-(host, environment) PostgreSQL client registry, e.g. {("microservices", "dev"): Client, ...}
@@ -43,7 +43,13 @@ if config.enable_redis:
 
 if config.enable_kafka:
     from src.clients.kafka import KafkaClient
-    kafka_client = KafkaClient(config.kafka_bootstrap_servers, ssl_enabled=config.kafka_ssl_enabled)
+
+    for _env, _servers in config.kafka_bootstrap_servers.items():
+        if _servers:
+            kafka_clients[_env] = KafkaClient(
+                _servers,
+                ssl_enabled=config.kafka_ssl_enabled.get(_env, False),
+            )
 
 if config.enable_obsidian:
     from src.clients.obsidian import ObsidianClient

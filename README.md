@@ -66,14 +66,7 @@ cp .env.example .env
 
 **PostgreSQL supports multiple named hosts, each with its own credentials** (e.g. `microservices`, `merchant`, `openapipartner`), each available per environment (`dev`, `qa`, `uat`, `prod`) — see [PostgreSQL: multi-host support](#postgresql-multi-host-support) below.
 
-**Redis and Elasticsearch tools support multiple environments** (`dev`, `qa`, `uat`, `prod`) selectable per call via an `environment` parameter — see [Multi-environment support](#multi-environment-support) below.
-
-**Kafka:**
-
-| Variable | Example |
-|----------|---------|
-| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` |
-| `KAFKA_SSL_ENABLED` | `false` |
+**Redis, Kafka, and Elasticsearch tools support multiple environments** (`dev`, `qa`, `uat`, `prod`) selectable per call via an `environment` parameter — see [Multi-environment support](#multi-environment-support) below.
 
 **Figma:**
 
@@ -117,9 +110,9 @@ Example tool call:
 
 ## Multi-environment support
 
-`redis_*`, `elasticsearch_*`, and `apm_*` tools require an `environment` parameter (`dev`, `qa`, `uat`, or `prod`) on every call, letting the agent target a different environment per request without restarting the server. There is no default — callers must always pass it explicitly.
+`redis_*`, `kafka_*`, `elasticsearch_*`, and `apm_*` tools require an `environment` parameter (`dev`, `qa`, `uat`, or `prod`) on every call, letting the agent target a different environment per request without restarting the server. There is no default — callers must always pass it explicitly.
 
-Configure credentials per environment using suffixed variables. Only environments with a non-empty URL are available; calling a tool with an unconfigured `environment` returns a clear error listing which environments are available.
+Configure connection settings per environment using suffixed variables. Only environments with a non-empty URL or bootstrap-server value are available; calling a tool with an unconfigured `environment` returns a clear error listing which environments are available.
 
 **Redis:**
 
@@ -129,6 +122,13 @@ Configure credentials per environment using suffixed variables. Only environment
 | `REDIS_URL_QA` | `redis://qa-host:6379/0` |
 | `REDIS_URL_UAT` | `redis://uat-host:6379/0` |
 | `REDIS_URL_PROD` | `redis://prod-host:6379/0` |
+
+**Kafka:**
+
+| Variable | Example |
+|----------|---------|
+| `KAFKA_BOOTSTRAP_SERVERS_<ENV>` | `uat-kafka-host:9093` |
+| `KAFKA_SSL_ENABLED_<ENV>` | `true` (defaults to `false`) |
 
 **Elasticsearch / APM:** (repeat suffix pattern per environment: `_DEV`, `_QA`, `_UAT`, `_PROD`)
 
@@ -145,6 +145,12 @@ Example tool call targeting dev explicitly:
 
 ```json
 { "tool": "elasticsearch_search", "arguments": { "index": "logs-*", "query": "error", "environment": "dev" } }
+```
+
+Kafka calls use the same explicit selection:
+
+```json
+{ "tool": "kafka_list_topics", "arguments": { "environment": "uat" } }
 ```
 
 ## Run locally

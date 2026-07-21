@@ -9,13 +9,13 @@ def test_config_defaults():
         jira_email="",
         enable_jira=False,
         enable_postgres=False,
-        kafka_ssl_enabled=False,
+        kafka_ssl_enabled={"dev": False, "qa": False, "uat": False, "prod": False},
     )
     assert config.atlassian_domain == ""
     assert config.jira_email == ""
     assert config.enable_jira is False
     assert config.enable_postgres is False
-    assert config.kafka_ssl_enabled is False
+    assert config.kafka_ssl_enabled["dev"] is False
 
 
 def test_config_properties():
@@ -30,6 +30,31 @@ def test_config_per_environment_urls():
         redis_urls={"dev": "redis://dev", "qa": "", "uat": "redis://uat", "prod": ""},
     )
     assert config.configured_environments(config.redis_urls) == ["dev", "uat"]
+
+
+def test_config_per_environment_kafka(monkeypatch):
+    for key in list(os.environ):
+        if key.startswith("KAFKA_BOOTSTRAP_SERVERS_") or key.startswith("KAFKA_SSL_ENABLED_"):
+            monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setenv("KAFKA_BOOTSTRAP_SERVERS_DEV", "dev-kafka:9092")
+    monkeypatch.setenv("KAFKA_BOOTSTRAP_SERVERS_UAT", "uat-kafka:9093")
+    monkeypatch.setenv("KAFKA_SSL_ENABLED_UAT", "true")
+
+    config = Config()
+
+    assert config.kafka_bootstrap_servers == {
+        "dev": "dev-kafka:9092",
+        "qa": "",
+        "uat": "uat-kafka:9093",
+        "prod": "",
+    }
+    assert config.kafka_ssl_enabled == {
+        "dev": False,
+        "qa": False,
+        "uat": True,
+        "prod": False,
+    }
 
 
 def test_config_postgres_host_urls_discovery(monkeypatch):
