@@ -35,7 +35,8 @@ def mock_config():
         enable_redis=True,
         redis_urls={"dev": "", "qa": "", "uat": "redis://localhost:6379", "prod": ""},
         enable_kafka=True,
-        kafka_bootstrap_servers="localhost:9092",
+        kafka_bootstrap_servers={"dev": "", "qa": "", "uat": "localhost:9092", "prod": ""},
+        kafka_ssl_enabled={"dev": False, "qa": False, "uat": False, "prod": False},
         enable_figma=True,
         figma_api_token="test-figma-token",
     )

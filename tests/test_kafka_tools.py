@@ -13,8 +13,8 @@ kafka_consume = _tools["kafka_consume"]
 async def test_kafka_list_topics_with_results():
     mock_kf = AsyncMock()
     mock_kf.list_topics.return_value = ["b", "a", "c"]
-    with patch("src.tools.kafka.kf", mock_kf):
-        result = await kafka_list_topics()
+    with patch("src.tools.kafka.kafka_clients", {"uat": mock_kf}):
+        result = await kafka_list_topics(environment="uat")
     assert '"a"' in result  # sorted
 
 
@@ -22,8 +22,8 @@ async def test_kafka_list_topics_with_results():
 async def test_kafka_list_topics_no_results():
     mock_kf = AsyncMock()
     mock_kf.list_topics.return_value = []
-    with patch("src.tools.kafka.kf", mock_kf):
-        result = await kafka_list_topics()
+    with patch("src.tools.kafka.kafka_clients", {"uat": mock_kf}):
+        result = await kafka_list_topics(environment="uat")
     assert result == "No topics found."
 
 
@@ -31,8 +31,8 @@ async def test_kafka_list_topics_no_results():
 async def test_kafka_describe_topic():
     mock_kf = AsyncMock()
     mock_kf.describe_topic.return_value = [{"topic": "t", "partitions": 3}]
-    with patch("src.tools.kafka.kf", mock_kf):
-        result = await kafka_describe_topic("t")
+    with patch("src.tools.kafka.kafka_clients", {"uat": mock_kf}):
+        result = await kafka_describe_topic("t", environment="uat")
     assert '"topic": "t"' in result
 
 
@@ -41,8 +41,8 @@ async def test_kafka_describe_topic():
 async def test_kafka_consume_with_messages():
     mock_kf = AsyncMock()
     mock_kf.consume.return_value = [{"topic": "t", "partition": 0, "offset": 0, "key": None, "value": "msg", "timestamp": 123}]
-    with patch("src.tools.kafka.kf", mock_kf):
-        result = await kafka_consume("t", count=5, timeout_ms=1000)
+    with patch("src.tools.kafka.kafka_clients", {"uat": mock_kf}):
+        result = await kafka_consume("t", environment="uat", count=5, timeout_ms=1000)
     assert '"value": "msg"' in result
 
 
@@ -50,6 +50,13 @@ async def test_kafka_consume_with_messages():
 async def test_kafka_consume_no_messages():
     mock_kf = AsyncMock()
     mock_kf.consume.return_value = []
-    with patch("src.tools.kafka.kf", mock_kf):
-        result = await kafka_consume("t")
+    with patch("src.tools.kafka.kafka_clients", {"uat": mock_kf}):
+        result = await kafka_consume("t", environment="uat")
     assert result == "No messages found."
+
+
+@pytest.mark.asyncio
+async def test_kafka_unknown_environment():
+    with patch("src.tools.kafka.kafka_clients", {}):
+        with pytest.raises(ValueError, match="No kafka client configured for environment 'dev'"):
+            await kafka_list_topics(environment="dev")
