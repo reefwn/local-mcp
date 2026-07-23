@@ -1,6 +1,6 @@
 # Local MCP Server
 
-MCP server for development and debugging tools — Atlassian (Jira, Confluence, Bitbucket), databases (PostgreSQL, Redis), messaging (Kafka), APM/logging (Elasticsearch, Elastic APM), design (Figma), and notes (Obsidian).
+MCP server for development and debugging tools — Atlassian (Jira, Confluence, Bitbucket), databases (PostgreSQL, Redis), messaging (Kafka), observability (Elasticsearch, Elastic APM, Loki, Tempo), design (Figma), and notes (Obsidian).
 
 Each client group runs on its own port within a single container, so your agent can connect to individual clients independently.
 
@@ -17,6 +17,8 @@ One container, multiple MCP servers running concurrently — one per client grou
 | 7377 | Figma | figma_get_file, figma_get_file_nodes, figma_get_images, figma_get_comments, figma_post_comment |
 | 7378 | Obsidian | obsidian_* |
 | 7379 | Elasticsearch + APM | elasticsearch_*, apm_* |
+| 7380 | Loki | loki_* |
+| 7381 | Tempo | tempo_* |
 
 Only ports for enabled clients are actually bound. Disabled clients don't start a server.
 
@@ -43,6 +45,8 @@ cp .env.example .env
 | `ENABLE_FIGMA` | `false` |
 | `ENABLE_OBSIDIAN` | `false` |
 | `ENABLE_ELASTICSEARCH` | `false` |
+| `ENABLE_LOKI` | `false` |
+| `ENABLE_TEMPO` | `false` |
 
 **Atlassian Cloud** (Jira + Confluence — one client, same site domain):
 
@@ -66,7 +70,7 @@ cp .env.example .env
 
 **PostgreSQL supports multiple named hosts, each with its own credentials** (e.g. `microservices`, `merchant`, `openapipartner`), each available per environment (`dev`, `qa`, `uat`, `prod`) — see [PostgreSQL: multi-host support](#postgresql-multi-host-support) below.
 
-**Redis, Kafka, and Elasticsearch tools support multiple environments** (`dev`, `qa`, `uat`, `prod`) selectable per call via an `environment` parameter — see [Multi-environment support](#multi-environment-support) below.
+**Redis, Kafka, Elasticsearch, Loki, and Tempo tools support multiple environments** (`dev`, `qa`, `uat`, `prod`) selectable per call via an `environment` parameter — see [Multi-environment support](#multi-environment-support) below.
 
 **Figma:**
 
@@ -86,6 +90,8 @@ cp .env.example .env
 > Requires the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api) community plugin.
 
 **Elasticsearch / APM:** configured per environment — see [Multi-environment support](#multi-environment-support).
+
+**Loki / Tempo:** configured per environment. Their tools default to `environment="all"` and merge results from every configured environment for incident debugging.
 
 ## PostgreSQL: multi-host support
 
@@ -110,7 +116,7 @@ Example tool call:
 
 ## Multi-environment support
 
-`redis_*`, `kafka_*`, `elasticsearch_*`, and `apm_*` tools require an `environment` parameter (`dev`, `qa`, `uat`, or `prod`) on every call, letting the agent target a different environment per request without restarting the server. There is no default — callers must always pass it explicitly.
+`redis_*`, `kafka_*`, `elasticsearch_*`, and `apm_*` tools require an explicit environment. Loki and Tempo accept the same environment names and additionally default to `all`, which queries every configured backend concurrently and merges results. A failed environment is reported in the response without hiding successful results from other environments.
 
 Configure connection settings per environment using suffixed variables. Only environments with a non-empty URL or bootstrap-server value are available; calling a tool with an unconfigured `environment` returns a clear error listing which environments are available.
 
@@ -140,6 +146,31 @@ Configure connection settings per environment using suffixed variables. Only env
 | `ELASTICSEARCH_PASSWORD_<ENV>` | Password for Basic Auth (optional) |
 
 > Use either API key or username/password per environment, not both.
+
+**Loki / Tempo:** (repeat suffix pattern per environment: `_DEV`, `_QA`, `_UAT`, `_PROD`)
+
+| Variable | Description |
+|----------|-------------|
+| `LOKI_URL_<ENV>` | Loki query endpoint, e.g. `http://loki:3100` |
+| `TEMPO_URL_<ENV>` | Tempo query endpoint, e.g. `http://tempo:3200` |
+| `LOKI_TOKEN_<ENV>` / `TEMPO_TOKEN_<ENV>` | Optional Bearer token |
+| `LOKI_USERNAME_<ENV>` / `TEMPO_USERNAME_<ENV>` | Optional Basic Auth username |
+| `LOKI_PASSWORD_<ENV>` / `TEMPO_PASSWORD_<ENV>` | Optional Basic Auth password |
+| `LOKI_TENANT_ID_<ENV>` / `TEMPO_TENANT_ID_<ENV>` | Optional multi-tenant `X-Scope-OrgID` |
+
+Use either a token or username/password for a backend. A token takes precedence when both are set.
+
+Aggregated Loki example:
+
+```json
+{ "tool": "loki_search_logs", "arguments": { "query": "{service_name=\"checkout\"} |= \"error\"", "hours_ago": 2, "limit": 100 } }
+```
+
+Aggregated Tempo example:
+
+```json
+{ "tool": "tempo_search_traces", "arguments": { "query": "{ status = error }", "hours_ago": 2, "limit": 20 } }
+```
 
 Example tool call targeting dev explicitly:
 
@@ -174,7 +205,7 @@ docker compose up -d --build # rebuild and start
 docker build -t local-mcp .
 docker run -d --rm --name local-mcp --env-file .env \
   -p 7373:7373 -p 7374:7374 -p 7375:7375 -p 7376:7376 \
-  -p 7377:7377 -p 7378:7378 -p 7379:7379 \
+  -p 7377:7377 -p 7378:7378 -p 7379:7379 -p 7380:7380 -p 7381:7381 \
   local-mcp
 ```
 
@@ -292,3 +323,19 @@ pytest
 | `apm_list_services` | List all services with recent activity |
 | `apm_get_service_metrics` | Get service throughput, latency, error rate |
 | `apm_find_slow_transactions` | Find transactions exceeding duration threshold |
+
+### Loki — port 7380
+
+| Tool | Description |
+|------|-------------|
+| `loki_search_logs` | Search LogQL across all or one environment and globally sort merged logs |
+| `loki_list_labels` | List the union of log labels across environments |
+| `loki_list_label_values` | List the union of values for a log label across environments |
+
+### Tempo — port 7381
+
+| Tool | Description |
+|------|-------------|
+| `tempo_search_traces` | Search TraceQL across all or one environment and merge traces |
+| `tempo_get_trace` | Retrieve a trace ID from all or one environment |
+| `tempo_list_services` | List the union of traced services across environments |

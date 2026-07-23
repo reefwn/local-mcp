@@ -86,6 +86,20 @@ class Config:
     elasticsearch_usernames: dict[str, str] = field(default_factory=lambda: _env_map("ELASTICSEARCH_USERNAME"))
     elasticsearch_passwords: dict[str, str] = field(default_factory=lambda: _env_map("ELASTICSEARCH_PASSWORD"))
 
+    enable_loki: bool = os.getenv("ENABLE_LOKI", "false").lower() == "true"
+    loki_urls: dict[str, str] = field(default_factory=lambda: _env_map("LOKI_URL"))
+    loki_tokens: dict[str, str] = field(default_factory=lambda: _env_map("LOKI_TOKEN"))
+    loki_usernames: dict[str, str] = field(default_factory=lambda: _env_map("LOKI_USERNAME"))
+    loki_passwords: dict[str, str] = field(default_factory=lambda: _env_map("LOKI_PASSWORD"))
+    loki_tenant_ids: dict[str, str] = field(default_factory=lambda: _env_map("LOKI_TENANT_ID"))
+
+    enable_tempo: bool = os.getenv("ENABLE_TEMPO", "false").lower() == "true"
+    tempo_urls: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_URL"))
+    tempo_tokens: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_TOKEN"))
+    tempo_usernames: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_USERNAME"))
+    tempo_passwords: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_PASSWORD"))
+    tempo_tenant_ids: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_TENANT_ID"))
+
     @property
     def jira_base_url(self) -> str:
         return f"https://{self.atlassian_domain}/rest/api/3"
