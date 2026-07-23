@@ -13,6 +13,8 @@ PORTS = {
     "figma": 7377,
     "obsidian": 7378,
     "elasticsearch": 7379,
+    "loki": 7380,
+    "tempo": 7381,
 }
 
 
@@ -71,6 +73,18 @@ async def main() -> None:
         from src.tools import elasticsearch, apm
         elasticsearch.register(mcp)
         apm.register(mcp)
+        servers.append(mcp)
+
+    if config.enable_loki:
+        mcp = _make_server("loki")
+        from src.tools import observability
+        observability.register_loki(mcp)
+        servers.append(mcp)
+
+    if config.enable_tempo:
+        mcp = _make_server("tempo")
+        from src.tools import observability
+        observability.register_tempo(mcp)
         servers.append(mcp)
 
     if not servers:

@@ -11,4 +11,6 @@ services:
       - "7377:7377"  # figma
       - "7378:7378"  # obsidian
       - "7379:7379"  # elasticsearch + apm
+      - "7380:7380"  # loki
+      - "7381:7381"  # tempo
     restart: unless-stopped

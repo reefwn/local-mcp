@@ -11,6 +11,8 @@ obsidian_client = None
 redis_clients: dict[str, "RedisClient"] = {}
 kafka_clients: dict[str, "KafkaClient"] = {}
 elasticsearch_clients: dict[str, "ElasticsearchClient"] = {}
+loki_clients: dict[str, "LokiClient"] = {}
+tempo_clients: dict[str, "TempoClient"] = {}
 
 # Per-(host, environment) PostgreSQL client registry, e.g. {("microservices", "dev"): Client, ...}
 # Hosts are open-ended — discovered from whichever POSTGRES_URL_<HOST>_<ENV> vars are set.
@@ -65,6 +67,32 @@ if config.enable_elasticsearch:
                 api_key=config.elasticsearch_api_keys.get(_env, ""),
                 username=config.elasticsearch_usernames.get(_env, ""),
                 password=config.elasticsearch_passwords.get(_env, ""),
+            )
+
+if config.enable_loki:
+    from src.clients.observability import LokiClient
+
+    for _env, _url in config.loki_urls.items():
+        if _url:
+            loki_clients[_env] = LokiClient(
+                url=_url,
+                token=config.loki_tokens.get(_env, ""),
+                username=config.loki_usernames.get(_env, ""),
+                password=config.loki_passwords.get(_env, ""),
+                tenant_id=config.loki_tenant_ids.get(_env, ""),
+            )
+
+if config.enable_tempo:
+    from src.clients.observability import TempoClient
+
+    for _env, _url in config.tempo_urls.items():
+        if _url:
+            tempo_clients[_env] = TempoClient(
+                url=_url,
+                token=config.tempo_tokens.get(_env, ""),
+                username=config.tempo_usernames.get(_env, ""),
+                password=config.tempo_passwords.get(_env, ""),
+                tenant_id=config.tempo_tenant_ids.get(_env, ""),
             )
 
 

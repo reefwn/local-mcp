@@ -32,6 +32,24 @@ def test_config_per_environment_urls():
     assert config.configured_environments(config.redis_urls) == ["dev", "uat"]
 
 
+def test_config_loki_and_tempo_per_environment(monkeypatch):
+    for key in list(os.environ):
+        if key.startswith("LOKI_") or key.startswith("TEMPO_"):
+            monkeypatch.delenv(key, raising=False)
+
+    monkeypatch.setenv("LOKI_URL_DEV", "http://dev-loki:3100")
+    monkeypatch.setenv("LOKI_TENANT_ID_DEV", "dev-tenant")
+    monkeypatch.setenv("TEMPO_URL_PROD", "http://prod-tempo:3200")
+    monkeypatch.setenv("TEMPO_TOKEN_PROD", "secret")
+
+    config = Config()
+
+    assert config.loki_urls["dev"] == "http://dev-loki:3100"
+    assert config.loki_tenant_ids["dev"] == "dev-tenant"
+    assert config.tempo_urls["prod"] == "http://prod-tempo:3200"
+    assert config.tempo_tokens["prod"] == "secret"
+
+
 def test_config_per_environment_kafka(monkeypatch):
     for key in list(os.environ):
         if key.startswith("KAFKA_BOOTSTRAP_SERVERS_") or key.startswith("KAFKA_SSL_ENABLED_"):
