@@ -233,6 +233,6 @@ async def test_bitbucket_decline_pr():
     mc.post.return_value = {}
     with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
         result = await bitbucket_decline_pr("repo", 42)
-    mc.post.assert_called_once_with("/repositories/test-ws/repo/pullrequests/42/decline")
+    mc.post.assert_called_once_with("/repositories/test-ws/repo/pullrequests/42/decline", json={})
     assert "42" in result
     assert "declined" in result
