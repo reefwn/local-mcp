@@ -346,7 +346,7 @@ def register(mcp: FastMCP) -> None:
     async def bitbucket_decline_pr(repo_slug: str, pr_id: int) -> str:
         """Decline (discard) an open pull request."""
         ws = config.bitbucket_workspace
-        await client.post(f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/decline")
+        await client.post(f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/decline", json={})
         return f"PR #{pr_id} has been declined."
 
     @mcp.tool()
