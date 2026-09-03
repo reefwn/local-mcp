@@ -60,6 +60,11 @@ class JiraCloudClient:
         r.raise_for_status()
         return r.json()
 
+    async def confluence_post(self, path: str, json: dict) -> dict:
+        r = await self._confluence.post(f"{self.config.confluence_base_url}{path}", json=json)
+        r.raise_for_status()
+        return r.json() if r.content else {}
+
     async def close(self) -> None:
         await self._jira.aclose()
         if self._confluence is not self._jira:
