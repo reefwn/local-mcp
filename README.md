@@ -66,6 +66,8 @@ cp .env.example .env
 | `BITBUCKET_API_TOKEN` | Generate at [API tokens page](https://id.atlassian.com/manage-profile/security/api-tokens) |
 | `BITBUCKET_WORKSPACE` | Your workspace slug from `https://bitbucket.org/{workspace-slug}/` |
 
+> `bitbucket_upload_image` reads `file_path` inside the container. Copy images to `./uploads` (mounted read-only at `/uploads`) and pass `/uploads/<name>`; then `docker compose up -d` to apply the mount.
+
 > Jira and Confluence typically share one Atlassian Cloud API token. Bitbucket uses its own credentials and is only initialized when `ENABLE_BITBUCKET=true`.
 
 **PostgreSQL supports multiple named hosts, each with its own credentials** (e.g. `microservices`, `merchant`, `openapipartner`), each available per environment (`dev`, `qa`, `uat`, `prod`) — see [PostgreSQL: multi-host support](#postgresql-multi-host-support) below.

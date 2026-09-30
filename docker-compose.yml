@@ -3,6 +3,8 @@ services:
     build: .
     container_name: local-mcp
     env_file: .env
+    volumes:
+      - ./uploads:/uploads:ro  # host dir readable by bitbucket_upload_image (use /uploads/<file> as file_path)
     ports:
       - "7373:7373"  # atlassian (jira, confluence, bitbucket)
       - "7374:7374"  # postgres

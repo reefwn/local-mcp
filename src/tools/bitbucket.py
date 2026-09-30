@@ -1,3 +1,6 @@
+import mimetypes
+from pathlib import Path
+
 from mcp.server.fastmcp import FastMCP
 
 from src.clients.atlassian import format_bitbucket_pipeline_ref, format_bitbucket_uuid
@@ -120,6 +123,34 @@ def register(mcp: FastMCP) -> None:
             f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/comments",
             json={"content": {"raw": content}},
         )
+
+    @mcp.tool()
+    async def bitbucket_upload_image(repo_slug: str, file_path: str, pr_id: int = 0, caption: str = "") -> str:
+        """Upload a single image file (no globs) to the repository Downloads and return its URL. If pr_id > 0, also post a PR comment embedding the image (optional caption). Bitbucket Cloud has no PR attachment API, so the image is stored in repo Downloads; viewers need repo access and inline rendering is not guaranteed. file_path is resolved on the machine running the MCP server; under Docker only the mounted uploads dir is visible (copy the file to ./uploads in the local-mcp repo, then pass /uploads/<name>)."""
+        repo_slug = _require_non_empty(repo_slug, "repo_slug")
+        path = Path(_require_non_empty(file_path, "file_path")).expanduser()
+        content_type = mimetypes.guess_type(path.name)[0] or ""
+        if not content_type.startswith("image/"):
+            raise ValueError(f"file_path must be an image file, got {path.name!r}.")
+        if not path.is_file():
+            raise ValueError(f"File not found: {path}")
+        ws = config.bitbucket_workspace
+        await client.upload_file(
+            f"/repositories/{ws}/{repo_slug}/downloads",
+            "files",
+            path.name,
+            path.read_bytes(),
+            content_type,
+        )
+        url = f"https://bitbucket.org/{ws}/{repo_slug}/downloads/{path.name}"
+        if pr_id > 0:
+            body = f"{caption.strip()}\n\n![{path.name}]({url})".strip()
+            await client.post(
+                f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/comments",
+                json={"content": {"raw": body}},
+            )
+            return f"Uploaded {path.name} and commented on PR #{pr_id}: {url}"
+        return f"Uploaded {path.name}: {url}"
 
     @mcp.tool()
     async def bitbucket_create_pr(

@@ -139,5 +139,13 @@ class BitbucketClient:
         self._check_response(r)
         return r.json()
 
+    async def upload_file(self, path: str, field: str, filename: str, content: bytes, content_type: str) -> None:
+        """POST a multipart file upload (e.g. repo Downloads). Bitbucket replies 201 with an empty body."""
+        r = await self._http.post(
+            f"{self.config.bitbucket_base_url}{path}",
+            files={field: (filename, content, content_type)},
+        )
+        self._check_response(r)
+
     async def close(self) -> None:
         await self._http.aclose()
