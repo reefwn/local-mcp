@@ -9,5 +9,7 @@ __pycache__/
 
 .DS_Store
 
+uploads/
+
 .kiro/
 .cursor/

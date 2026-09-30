@@ -124,6 +124,14 @@ async def test_bitbucket_post_success(mock_bitbucket_client):
 
 
 @pytest.mark.asyncio
+async def test_bitbucket_upload_file_success(mock_bitbucket_client):
+    mock_bitbucket_client._http.post = AsyncMock(return_value=_make_response())
+    await mock_bitbucket_client.upload_file("/downloads", "files", "a.png", b"img", "image/png")
+    kwargs = mock_bitbucket_client._http.post.call_args.kwargs
+    assert kwargs["files"] == {"files": ("a.png", b"img", "image/png")}
+
+
+@pytest.mark.asyncio
 async def test_bitbucket_api_error_includes_body(mock_bitbucket_client):
     resp = MagicMock()
     resp.is_error = True

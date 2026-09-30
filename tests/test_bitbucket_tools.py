@@ -16,6 +16,7 @@ bitbucket_list_default_reviewers = _tools["bitbucket_list_default_reviewers"]
 bitbucket_update_pr_reviewers = _tools["bitbucket_update_pr_reviewers"]
 bitbucket_get_pipeline_step_log = _tools["bitbucket_get_pipeline_step_log"]
 bitbucket_decline_pr = _tools["bitbucket_decline_pr"]
+bitbucket_upload_image = _tools["bitbucket_upload_image"]
 
 
 def _patches():
@@ -236,3 +237,43 @@ async def test_bitbucket_decline_pr():
     mc.post.assert_called_once_with("/repositories/test-ws/repo/pullrequests/42/decline", json={})
     assert "42" in result
     assert "declined" in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_upload_image_with_pr_comment(tmp_path):
+    img = tmp_path / "shot.png"
+    img.write_bytes(b"png")
+    mc, cfg = _patches()
+    mc.post.return_value = {}
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_upload_image("repo", str(img), pr_id=7, caption="Before")
+    mc.upload_file.assert_called_once_with(
+        "/repositories/test-ws/repo/downloads", "files", "shot.png", b"png", "image/png"
+    )
+    url = "https://bitbucket.org/test-ws/repo/downloads/shot.png"
+    mc.post.assert_called_once_with(
+        "/repositories/test-ws/repo/pullrequests/7/comments",
+        json={"content": {"raw": f"Before\n\n![shot.png]({url})"}},
+    )
+    assert url in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_upload_image_no_pr(tmp_path):
+    img = tmp_path / "shot.png"
+    img.write_bytes(b"png")
+    mc, cfg = _patches()
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        await bitbucket_upload_image("repo", str(img))
+    mc.post.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_upload_image_rejects_non_image(tmp_path):
+    f = tmp_path / "notes.txt"
+    f.write_text("x")
+    mc, cfg = _patches()
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        with pytest.raises(ValueError, match="image"):
+            await bitbucket_upload_image("repo", str(f))
+    mc.upload_file.assert_not_called()
