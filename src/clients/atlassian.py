@@ -144,6 +144,11 @@ class BitbucketClient:
         self._check_response(r)
         return r.json()
 
+    async def delete(self, path: str) -> dict:
+        r = await self._http.delete(f"{self.config.bitbucket_base_url}{path}")
+        self._check_response(r)
+        return r.json() if r.content else {}
+
     async def upload_file(self, path: str, field: str, filename: str, content: bytes, content_type: str) -> None:
         """POST a multipart file upload (e.g. repo Downloads). Bitbucket replies 201 with an empty body."""
         r = await self._http.post(

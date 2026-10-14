@@ -257,6 +257,11 @@ pytest
 | `bitbucket_get_pipeline_step_log` | Get log output for a pipeline step |
 | `bitbucket_list_workspace_members` | List workspace members with UUIDs |
 | `bitbucket_list_default_reviewers` | List default reviewers for a repository |
+| `bitbucket_approve_pr` | Approve an open pull request |
+| `bitbucket_unapprove_pr` | Remove your approval from a pull request |
+| `bitbucket_request_pr_changes` | Request changes on an open pull request |
+| `bitbucket_clear_pr_changes_request` | Clear your request-for-changes on a pull request |
+| `bitbucket_decline_pr` | Decline (discard) an open pull request |
 
 ### PostgreSQL — port 7374
 
