@@ -15,6 +15,10 @@ bitbucket_list_workspace_members = _tools["bitbucket_list_workspace_members"]
 bitbucket_list_default_reviewers = _tools["bitbucket_list_default_reviewers"]
 bitbucket_update_pr_reviewers = _tools["bitbucket_update_pr_reviewers"]
 bitbucket_get_pipeline_step_log = _tools["bitbucket_get_pipeline_step_log"]
+bitbucket_approve_pr = _tools["bitbucket_approve_pr"]
+bitbucket_request_pr_changes = _tools["bitbucket_request_pr_changes"]
+bitbucket_unapprove_pr = _tools["bitbucket_unapprove_pr"]
+bitbucket_clear_pr_changes_request = _tools["bitbucket_clear_pr_changes_request"]
 bitbucket_decline_pr = _tools["bitbucket_decline_pr"]
 bitbucket_upload_image = _tools["bitbucket_upload_image"]
 
@@ -226,6 +230,56 @@ async def test_bitbucket_update_pr_reviewers():
         json={"reviewers": [{"uuid": "{uuid-1}"}, {"uuid": "{uuid-2}"}]},
     )
     assert "updated" in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_approve_pr():
+    mc, cfg = _patches()
+    mc.post.return_value = {}
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_approve_pr("repo", 42)
+    mc.post.assert_called_once_with(
+        "/repositories/test-ws/repo/pullrequests/42/approve",
+        json={"approved": True},
+    )
+    assert "42" in result
+    assert "approved" in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_request_pr_changes():
+    mc, cfg = _patches()
+    mc.post.return_value = {}
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_request_pr_changes("repo", 42)
+    mc.post.assert_called_once_with(
+        "/repositories/test-ws/repo/pullrequests/42/request-changes",
+        json={"request-changes": True},
+    )
+    assert "42" in result
+    assert "changes" in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_unapprove_pr():
+    mc, cfg = _patches()
+    mc.delete.return_value = {}
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_unapprove_pr("repo", 42)
+    mc.delete.assert_called_once_with("/repositories/test-ws/repo/pullrequests/42/approve")
+    assert "42" in result
+    assert "approval" in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_clear_pr_changes_request():
+    mc, cfg = _patches()
+    mc.delete.return_value = {}
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_clear_pr_changes_request("repo", 42)
+    mc.delete.assert_called_once_with("/repositories/test-ws/repo/pullrequests/42/request-changes")
+    assert "42" in result
+    assert "cleared" in result
 
 
 @pytest.mark.asyncio

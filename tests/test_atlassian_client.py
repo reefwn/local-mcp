@@ -124,6 +124,13 @@ async def test_bitbucket_post_success(mock_bitbucket_client):
 
 
 @pytest.mark.asyncio
+async def test_bitbucket_delete_success(mock_bitbucket_client):
+    mock_bitbucket_client._http.delete = AsyncMock(return_value=_make_response())
+    result = await mock_bitbucket_client.delete("/pullrequests/1/approve")
+    assert result == {}
+
+
+@pytest.mark.asyncio
 async def test_bitbucket_upload_file_success(mock_bitbucket_client):
     mock_bitbucket_client._http.post = AsyncMock(return_value=_make_response())
     await mock_bitbucket_client.upload_file("/downloads", "files", "a.png", b"img", "image/png")

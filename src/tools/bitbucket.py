@@ -374,6 +374,40 @@ def register(mcp: FastMCP) -> None:
         ]
 
     @mcp.tool()
+    async def bitbucket_approve_pr(repo_slug: str, pr_id: int) -> str:
+        """Approve an open pull request as the authenticated user."""
+        ws = config.bitbucket_workspace
+        await client.post(
+            f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/approve",
+            json={"approved": True},
+        )
+        return f"PR #{pr_id} has been approved."
+
+    @mcp.tool()
+    async def bitbucket_request_pr_changes(repo_slug: str, pr_id: int) -> str:
+        """Request changes on an open pull request as the authenticated user."""
+        ws = config.bitbucket_workspace
+        await client.post(
+            f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/request-changes",
+            json={"request-changes": True},
+        )
+        return f"PR #{pr_id}: changes have been requested."
+
+    @mcp.tool()
+    async def bitbucket_unapprove_pr(repo_slug: str, pr_id: int) -> str:
+        """Remove your approval from an open pull request."""
+        ws = config.bitbucket_workspace
+        await client.delete(f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/approve")
+        return f"PR #{pr_id}: approval has been removed."
+
+    @mcp.tool()
+    async def bitbucket_clear_pr_changes_request(repo_slug: str, pr_id: int) -> str:
+        """Clear your request-for-changes on an open pull request."""
+        ws = config.bitbucket_workspace
+        await client.delete(f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}/request-changes")
+        return f"PR #{pr_id}: request for changes has been cleared."
+
+    @mcp.tool()
     async def bitbucket_decline_pr(repo_slug: str, pr_id: int) -> str:
         """Decline (discard) an open pull request."""
         ws = config.bitbucket_workspace
