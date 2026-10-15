@@ -106,6 +106,18 @@ def register(mcp: FastMCP) -> None:
         return f"PR #{pr_id} description updated."
 
     @mcp.tool()
+    async def bitbucket_update_pr_title(repo_slug: str, pr_id: int, title: str) -> str:
+        """Update the title of a Bitbucket pull request."""
+        repo_slug = _require_non_empty(repo_slug, "repo_slug")
+        title = _require_non_empty(title, "title")
+        ws = config.bitbucket_workspace
+        await client.put(
+            f"/repositories/{ws}/{repo_slug}/pullrequests/{pr_id}",
+            json={"title": title},
+        )
+        return f"PR #{pr_id} title updated."
+
+    @mcp.tool()
     async def bitbucket_update_pr_reviewers(repo_slug: str, pr_id: int, reviewers: list[str]) -> str:
         """Update the reviewers of a Bitbucket pull request. Reviewers is a list of user UUIDs. This replaces the current reviewer list entirely."""
         ws = config.bitbucket_workspace
