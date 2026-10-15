@@ -248,6 +248,7 @@ pytest
 | `bitbucket_create_pr` | Create a new pull request |
 | `bitbucket_create_pr_comment` | Post a comment on a pull request |
 | `bitbucket_update_pr_description` | Update the description of a PR |
+| `bitbucket_update_pr_title` | Update the title of a PR |
 | `bitbucket_update_pr_reviewers` | Replace the reviewer list on a PR |
 | `bitbucket_list_branch_restrictions` | List branch restrictions |
 | `bitbucket_create_branch_restriction` | Create a branch restriction |

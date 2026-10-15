@@ -13,6 +13,7 @@ bitbucket_create_pr_comment = _tools["bitbucket_create_pr_comment"]
 bitbucket_create_pr = _tools["bitbucket_create_pr"]
 bitbucket_list_workspace_members = _tools["bitbucket_list_workspace_members"]
 bitbucket_list_default_reviewers = _tools["bitbucket_list_default_reviewers"]
+bitbucket_update_pr_title = _tools["bitbucket_update_pr_title"]
 bitbucket_update_pr_reviewers = _tools["bitbucket_update_pr_reviewers"]
 bitbucket_get_pipeline_step_log = _tools["bitbucket_get_pipeline_step_log"]
 bitbucket_approve_pr = _tools["bitbucket_approve_pr"]
@@ -216,6 +217,27 @@ async def test_bitbucket_get_pipeline_step_log():
     mc.get_binary_text.assert_called_once_with(
         "/repositories/test-ws/repo/pipelines/263/steps/{6769c35b-a50d-4b4a-a1a9-35606d88c3b4}/log"
     )
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_update_pr_title():
+    mc, cfg = _patches()
+    mc.put.return_value = {}
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        result = await bitbucket_update_pr_title("repo", 5, "New PR title")
+    mc.put.assert_called_once_with(
+        "/repositories/test-ws/repo/pullrequests/5",
+        json={"title": "New PR title"},
+    )
+    assert "title updated" in result
+
+
+@pytest.mark.asyncio
+async def test_bitbucket_update_pr_title_rejects_empty_title():
+    mc, cfg = _patches()
+    with patch("src.tools.bitbucket.client", mc), patch("src.tools.bitbucket.config", cfg):
+        with pytest.raises(ValueError, match="title"):
+            await bitbucket_update_pr_title("repo", 5, "   ")
 
 
 @pytest.mark.asyncio
