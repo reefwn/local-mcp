@@ -15,6 +15,7 @@ PORTS = {
     "elasticsearch": 7379,
     "loki": 7380,
     "tempo": 7381,
+    "sonarqube": 7382,
 }
 
 
@@ -87,11 +88,28 @@ async def main() -> None:
         observability.register_tempo(mcp)
         servers.append(mcp)
 
-    if not servers:
+    coroutines = [s.run_streamable_http_async() for s in servers]
+
+    if config.enable_sonarqube:
+        if not config.sonarqube_token:
+            print("ENABLE_SONARQUBE=true but SONARQUBE_TOKEN is empty.")
+        else:
+            from src.sonarqube_proxy import run_proxy_server
+
+            coroutines.append(
+                run_proxy_server(
+                    host="0.0.0.0",
+                    port=PORTS["sonarqube"],
+                    upstream_base=config.sonarqube_mcp_upstream,
+                    token=config.sonarqube_token,
+                )
+            )
+
+    if not coroutines:
         print("No clients enabled. Set at least one ENABLE_* env var to true.")
         return
 
-    await asyncio.gather(*[s.run_streamable_http_async() for s in servers])
+    await asyncio.gather(*coroutines)
 
 
 if __name__ == "__main__":

@@ -5,5 +5,5 @@ COPY pyproject.toml .
 RUN pip install --no-cache-dir .
 COPY src/ src/
 
-EXPOSE 7373 7374 7375 7376 7377 7378 7379 7380 7381
+EXPOSE 7373 7374 7375 7376 7377 7378 7379 7380 7381 7382
 ENTRYPOINT ["python", "-m", "src.server"]

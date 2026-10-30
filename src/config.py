@@ -94,6 +94,11 @@ class Config:
     loki_tenant_ids: dict[str, str] = field(default_factory=lambda: _env_map("LOKI_TENANT_ID"))
 
     enable_tempo: bool = os.getenv("ENABLE_TEMPO", "false").lower() == "true"
+    enable_sonarqube: bool = os.getenv("ENABLE_SONARQUBE", "false").lower() == "true"
+    sonarqube_token: str = os.getenv("SONARQUBE_TOKEN", "")
+    sonarqube_mcp_upstream: str = os.getenv(
+        "SONARQUBE_MCP_UPSTREAM", "http://127.0.0.1:8080"
+    )
     tempo_urls: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_URL"))
     tempo_tokens: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_TOKEN"))
     tempo_usernames: dict[str, str] = field(default_factory=lambda: _env_map("TEMPO_USERNAME"))
