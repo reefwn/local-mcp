@@ -15,4 +15,28 @@ services:
       - "7379:7379"  # elasticsearch + apm
       - "7380:7380"  # loki
       - "7381:7381"  # tempo
+      - "7382:7382"  # sonarqube (auth proxy → sonarqube-mcp sidecar)
+    environment:
+      SONARQUBE_MCP_UPSTREAM: http://sonarqube-mcp:8080
+    restart: unless-stopped
+
+  # Official SonarSource MCP (Java). Opt in: COMPOSE_PROFILES=sonarqube or --profile sonarqube
+  sonarqube-mcp:
+    image: sonarsource/sonarqube-mcp:1.27.1.4770
+    init: true
+    profiles:
+      - sonarqube
+    container_name: sonarqube-mcp
+    environment:
+      SONARQUBE_TRANSPORT: http
+      SONARQUBE_HTTP_HOST: 0.0.0.0
+      SONARQUBE_HTTP_PORT: 8080
+      SONARQUBE_URL: ${SONARQUBE_URL}
+      SONARQUBE_TOKEN: ${SONARQUBE_TOKEN}
+      SONARQUBE_ORG: ${SONARQUBE_ORG:-}
+      SONARQUBE_TOOLSETS: ${SONARQUBE_TOOLSETS:-}
+      SONARQUBE_READ_ONLY: ${SONARQUBE_READ_ONLY:-}
+      SONARQUBE_PROJECT_KEY: ${SONARQUBE_PROJECT_KEY:-}
+    volumes:
+      - ${SONARQUBE_WORKSPACE:-.}:/app/mcp-workspace:ro
     restart: unless-stopped

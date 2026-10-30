@@ -1,6 +1,6 @@
 # Local MCP Server
 
-MCP server for development and debugging tools — Atlassian (Jira, Confluence, Bitbucket), databases (PostgreSQL, Redis), messaging (Kafka), observability (Elasticsearch, Elastic APM, Loki, Tempo), design (Figma), and notes (Obsidian).
+MCP server for development and debugging tools — Atlassian (Jira, Confluence, Bitbucket), databases (PostgreSQL, Redis), messaging (Kafka), observability (Elasticsearch, Elastic APM, Loki, Tempo), design (Figma), notes (Obsidian), and optional SonarQube (official sidecar).
 
 Each client group runs on its own port within a single container, so your agent can connect to individual clients independently.
 
@@ -19,8 +19,11 @@ One container, multiple MCP servers running concurrently — one per client grou
 | 7379 | Elasticsearch + APM | elasticsearch_*, apm_* |
 | 7380 | Loki | loki_* |
 | 7381 | Tempo | tempo_* |
+| 7382 | SonarQube | Official Sonar MCP (via local auth proxy) |
 
 Only ports for enabled clients are actually bound. Disabled clients don't start a server.
+
+The SonarQube MCP runs as a **separate container** (`sonarqube-mcp`, internal only) plus an **auth proxy** on port **7382** inside the `local-mcp` container when `ENABLE_SONARQUBE=true`. See [SonarQube MCP sidecar](#sonarqube-mcp-sidecar).
 
 ## Setup
 
@@ -47,6 +50,9 @@ cp .env.example .env
 | `ENABLE_ELASTICSEARCH` | `false` |
 | `ENABLE_LOKI` | `false` |
 | `ENABLE_TEMPO` | `false` |
+| `ENABLE_SONARQUBE` | `false` |
+
+**SonarQube:** set `ENABLE_SONARQUBE=true` in `.env` (same file as other tools). The `local-mcp` process exposes port **7382** and injects `SONARQUBE_TOKEN` when proxying to the official Java sidecar. Also start the sidecar with Compose profile `sonarqube` (`COMPOSE_PROFILES=sonarqube` or `docker compose --profile sonarqube up -d`). Cursor needs only `http://localhost:7382/mcp` — no token in MCP settings.
 
 **Atlassian Cloud** (Jira + Confluence — one client, same site domain):
 
@@ -174,6 +180,51 @@ Aggregated Tempo example:
 { "tool": "tempo_search_traces", "arguments": { "query": "{ status = error }", "hours_ago": 2, "limit": 20 } }
 ```
 
+## SonarQube MCP sidecar
+
+Sonar credentials stay in `.env`, like Jira or Postgres. Architecture:
+
+1. **`sonarqube-mcp`** — official SonarSource image (Compose profile `sonarqube`), not published to the host; holds `SONARQUBE_URL`, token, workspace mount, toolsets.
+2. **`local-mcp`** with `ENABLE_SONARQUBE=true` — HTTP proxy on **7382** forwards to `http://sonarqube-mcp:8080` and adds `Authorization: Bearer` from `SONARQUBE_TOKEN`.
+
+### Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ENABLE_SONARQUBE` | Yes | `true` to bind port 7382 on the `local-mcp` container |
+| `SONARQUBE_TOKEN` | Yes | SonarQube **user** token (read by proxy and sidecar) |
+| `SONARQUBE_URL` | Yes | SonarQube Server URL or Cloud API base |
+| `SONARQUBE_MCP_UPSTREAM` | No | Upstream MCP URL for the proxy (default `http://127.0.0.1:8080`; Compose sets `http://sonarqube-mcp:8080`) |
+| `SONARQUBE_ORG` | Cloud (often optional) | Organization key on SonarQube Cloud |
+| `SONARQUBE_WORKSPACE` | For `filePath` analysis | Host directory mounted on the sidecar at `/app/mcp-workspace` |
+| `SONARQUBE_TOOLSETS` | No | Comma-separated toolsets (sidecar only) |
+| `SONARQUBE_READ_ONLY` | No | `true` to disable write tools on the sidecar |
+| `SONARQUBE_PROJECT_KEY` | No | Default project key |
+
+For SonarQube Cloud in the **US** region, set `SONARQUBE_URL=https://sonarqube.us`.
+
+Set `SONARQUBE_WORKSPACE` to the root of the codebase you analyze so agents can use project-relative `filePath`.
+
+### Run
+
+```bash
+# .env: ENABLE_SONARQUBE=true, SONARQUBE_URL=..., SONARQUBE_TOKEN=...
+docker compose --profile sonarqube up -d --build
+```
+
+Health check (via proxy): `curl -s -o /dev/null -w "%{http_code}" http://localhost:7382/health` → `200`.
+
+### Connect Cursor
+
+Same pattern as other `local-mcp-*` servers — **no headers**:
+
+```json
+"local-mcp-sonarqube": {
+  "type": "http",
+  "url": "http://localhost:7382/mcp"
+}
+```
+
 Example tool call targeting dev explicitly:
 
 ```json
@@ -199,6 +250,7 @@ python -m src.server
 docker compose up -d         # start in background
 docker compose down          # stop
 docker compose up -d --build # rebuild and start
+docker compose --profile sonarqube up -d   # include SonarQube MCP on port 7382
 ```
 
 ## Run with Docker
@@ -207,9 +259,11 @@ docker compose up -d --build # rebuild and start
 docker build -t local-mcp .
 docker run -d --rm --name local-mcp --env-file .env \
   -p 7373:7373 -p 7374:7374 -p 7375:7375 -p 7376:7376 \
-  -p 7377:7377 -p 7378:7378 -p 7379:7379 -p 7380:7380 -p 7381:7381 \
+  -p 7377:7377 -p 7378:7378 -p 7379:7379 -p 7380:7380 -p 7381:7381 -p 7382:7382 \
   local-mcp
 ```
+
+SonarQube requires the official sidecar plus `ENABLE_SONARQUBE=true`; use Compose profile `sonarqube` (see above).
 
 ## Tests
 
