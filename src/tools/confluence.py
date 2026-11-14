@@ -22,6 +22,7 @@ def register(mcp: FastMCP) -> None:
             "id": data["id"],
             "title": data["title"],
             "status": data["status"],
+            "version": data.get("version", {}).get("number"),
             "body": data.get("body", {}).get("storage", {}).get("value", ""),
         }
 
@@ -54,3 +55,40 @@ def register(mcp: FastMCP) -> None:
 
         data = await client.confluence_post("/pages", json=page)
         return f"Created page [{data['id']}] {data['title']}"
+
+    @mcp.tool()
+    async def confluence_update_page(
+        page_id: str,
+        body: str,
+        title: str = "",
+        version_message: str = "",
+    ) -> str:
+        """Update an existing Confluence page.
+
+        Args:
+            page_id: Page ID (from confluence_search or confluence_get_page).
+            body: New content in Confluence storage format (XHTML, e.g. '<p>Hello</p>').
+            title: Optional new title; omit to keep the current title.
+            version_message: Optional note stored on the new page version.
+        """
+        current = await client.confluence_get(
+            f"/pages/{page_id}", params={"body-format": "storage"}
+        )
+        version = current.get("version", {}).get("number")
+        if version is None:
+            raise ValueError(f"Page {page_id!r} has no version; cannot update.")
+
+        page_title = title or current["title"]
+        payload: dict = {
+            "id": page_id,
+            "status": "current",
+            "title": page_title,
+            "body": {"representation": "storage", "value": body},
+            "version": {"number": version + 1},
+        }
+        if version_message:
+            payload["version"]["message"] = version_message
+
+        data = await client.confluence_put(f"/pages/{page_id}", json=payload)
+        new_version = data.get("version", {}).get("number", version + 1)
+        return f"Updated page [{data['id']}] {data['title']} (version {new_version})"

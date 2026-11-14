@@ -288,7 +288,9 @@ pytest
 | `jira_list_transitions` | List available status transitions |
 | `jira_update_status` | Transition an issue to a new status |
 | `confluence_search` | Search pages by title or content |
-| `confluence_get_page` | Get page content by ID |
+| `confluence_get_page` | Get page content and version by ID |
+| `confluence_create_page` | Create a page (storage-format body; optional parent) |
+| `confluence_update_page` | Update page body and optional title (optimistic version) |
 | `bitbucket_list_repos` | List workspace repositories |
 | `bitbucket_get_repo` | Get repository details |
 | `bitbucket_list_branches` | List branches in a repository |
