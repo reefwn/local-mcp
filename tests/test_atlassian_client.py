@@ -66,6 +66,17 @@ async def test_confluence_post_success(mock_jira_cloud_client):
 
 
 @pytest.mark.asyncio
+async def test_confluence_put_success(mock_jira_cloud_client):
+    mock_jira_cloud_client._confluence.put = AsyncMock(
+        return_value=_make_response({"id": "123", "title": "Updated", "version": {"number": 2}})
+    )
+    result = await mock_jira_cloud_client.confluence_put(
+        "/pages/123", json={"id": "123", "version": {"number": 2}}
+    )
+    assert result == {"id": "123", "title": "Updated", "version": {"number": 2}}
+
+
+@pytest.mark.asyncio
 async def test_bitbucket_client_init(mock_config):
     with patch("httpx.AsyncClient") as mock_client:
         client = BitbucketClient(mock_config)

@@ -7,6 +7,7 @@ _tools = load_tool_functions("src.tools.confluence")
 confluence_search = _tools["confluence_search"]
 confluence_get_page = _tools["confluence_get_page"]
 confluence_create_page = _tools["confluence_create_page"]
+confluence_update_page = _tools["confluence_update_page"]
 
 
 @pytest.mark.asyncio
@@ -43,7 +44,13 @@ async def test_confluence_get_page_success():
     }
     with patch("src.tools.confluence.client", mock_client):
         result = await confluence_get_page("123")
-    assert result == {"id": "123", "title": "Test Page", "status": "current", "body": "<p>Content</p>"}
+    assert result == {
+        "id": "123",
+        "title": "Test Page",
+        "status": "current",
+        "version": None,
+        "body": "<p>Content</p>",
+    }
 
 
 @pytest.mark.asyncio
@@ -93,3 +100,74 @@ async def test_confluence_create_page_space_not_found():
     with patch("src.tools.confluence.client", mock_client):
         with pytest.raises(ValueError, match="No Confluence space found"):
             await confluence_create_page("NOPE", "Title", "<p>x</p>")
+
+
+@pytest.mark.asyncio
+async def test_confluence_get_page_includes_version():
+    mock_client = AsyncMock()
+    mock_client.confluence_get.return_value = {
+        "id": "123",
+        "title": "Test Page",
+        "status": "current",
+        "version": {"number": 5},
+        "body": {"storage": {"value": "<p>Content</p>"}},
+    }
+    with patch("src.tools.confluence.client", mock_client):
+        result = await confluence_get_page("123")
+    assert result["version"] == 5
+
+
+@pytest.mark.asyncio
+async def test_confluence_update_page_success():
+    mock_client = AsyncMock()
+    mock_client.confluence_get.return_value = {
+        "id": "123",
+        "title": "Old Title",
+        "status": "current",
+        "version": {"number": 3},
+        "body": {"storage": {"value": "<p>Old</p>"}},
+    }
+    mock_client.confluence_put.return_value = {
+        "id": "123",
+        "title": "Old Title",
+        "version": {"number": 4},
+    }
+    with patch("src.tools.confluence.client", mock_client):
+        result = await confluence_update_page("123", "<p>New</p>")
+    assert result == "Updated page [123] Old Title (version 4)"
+    mock_client.confluence_put.assert_called_once_with(
+        "/pages/123",
+        json={
+            "id": "123",
+            "status": "current",
+            "title": "Old Title",
+            "body": {"representation": "storage", "value": "<p>New</p>"},
+            "version": {"number": 4},
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_confluence_update_page_with_title_and_message():
+    mock_client = AsyncMock()
+    mock_client.confluence_get.return_value = {
+        "id": "123",
+        "title": "Old Title",
+        "status": "current",
+        "version": {"number": 1},
+    }
+    mock_client.confluence_put.return_value = {"id": "123", "title": "New Title", "version": {"number": 2}}
+    with patch("src.tools.confluence.client", mock_client):
+        await confluence_update_page("123", "<p>x</p>", title="New Title", version_message="via MCP")
+    call_json = mock_client.confluence_put.call_args.kwargs["json"]
+    assert call_json["title"] == "New Title"
+    assert call_json["version"] == {"number": 2, "message": "via MCP"}
+
+
+@pytest.mark.asyncio
+async def test_confluence_update_page_no_version():
+    mock_client = AsyncMock()
+    mock_client.confluence_get.return_value = {"id": "123", "title": "T", "status": "current"}
+    with patch("src.tools.confluence.client", mock_client):
+        with pytest.raises(ValueError, match="no version"):
+            await confluence_update_page("123", "<p>x</p>")
