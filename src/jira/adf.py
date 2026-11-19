@@ -9,6 +9,7 @@ _HEADING_RE = re.compile(r"^(#{2,3})\s+(.+)$")
 _BULLET_RE = re.compile(r"^[-*]\s+(.+)$")
 _ORDERED_RE = re.compile(r"^\d+\.\s+(.+)$")
 _INLINE_RE = re.compile(r"(\*\*(.+?)\*\*|`([^`]+)`)")
+_TABLE_SEP_CELL_RE = re.compile(r"^:?-{3,}:?$")
 
 ADFDoc = dict[str, Any]
 
@@ -79,6 +80,11 @@ def markdown_to_adf(text: str) -> ADFDoc:
             content.append(_ordered_list(items))
             continue
 
+        if _is_table_row(line):
+            table, i = _parse_table_block(lines, i)
+            content.append(table)
+            continue
+
         block_lines: list[str] = []
         while i < len(lines) and lines[i].strip():
             if _is_block_start(lines[i]):
@@ -106,7 +112,90 @@ def _is_block_start(line: str) -> bool:
         return True
     if _ORDERED_RE.match(line):
         return True
+    if _is_table_row(line):
+        return True
     return False
+
+
+def _is_table_row(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped.startswith("|"):
+        return False
+    return stripped.count("|") >= 2 and not _is_table_separator(line)
+
+
+def _is_table_separator(line: str) -> bool:
+    cells = _split_table_row(line)
+    if len(cells) < 1:
+        return False
+    return all(_TABLE_SEP_CELL_RE.match(cell.strip()) for cell in cells)
+
+
+def _split_table_row(line: str) -> list[str]:
+    stripped = line.strip()
+    if stripped.startswith("|"):
+        stripped = stripped[1:]
+    if stripped.endswith("|"):
+        stripped = stripped[:-1]
+    return [cell.strip() for cell in stripped.split("|")]
+
+
+def _parse_table_block(lines: list[str], start: int) -> tuple[dict[str, Any], int]:
+    i = start
+    first = _split_table_row(lines[i])
+    i += 1
+    header: list[str] | None = None
+    body: list[list[str]] = []
+
+    if i < len(lines) and _is_table_separator(lines[i]):
+        header = first
+        i += 1
+    else:
+        body.append(first)
+
+    while i < len(lines) and _is_table_row(lines[i]):
+        body.append(_split_table_row(lines[i]))
+        i += 1
+
+    return _table(header, body), i
+
+
+def _table(header: list[str] | None, rows: list[list[str]]) -> dict[str, Any]:
+    col_count = max(
+        [len(header) if header else 0, *[len(row) for row in rows]] or [0]
+    )
+
+    def _pad(cells: list[str]) -> list[str]:
+        if len(cells) < col_count:
+            return cells + [""] * (col_count - len(cells))
+        return cells[:col_count]
+
+    content: list[dict[str, Any]] = []
+    if header is not None:
+        content.append(_table_row(_pad(header), header=True))
+    for row in rows:
+        content.append(_table_row(_pad(row), header=False))
+
+    return {
+        "type": "table",
+        "attrs": {"isNumberColumnEnabled": False, "layout": "default"},
+        "content": content,
+    }
+
+
+def _table_row(cells: list[str], *, header: bool) -> dict[str, Any]:
+    cell_type = "tableHeader" if header else "tableCell"
+    return {
+        "type": "tableRow",
+        "content": [
+            {
+                "type": cell_type,
+                "attrs": {},
+                "content": [_paragraph(text)],
+            }
+            for text in cells
+        ],
+    }
 
 
 def _text_node(text: str, *, strong: bool = False, code: bool = False) -> dict[str, Any]:
