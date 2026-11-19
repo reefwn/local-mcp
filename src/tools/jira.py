@@ -88,8 +88,8 @@ def register(mcp: FastMCP) -> None:
         """Add a comment to a Jira issue by key (e.g. PROJ-123).
 
         comment_format:
-            markdown (default) — headings (## / ###), bullet/numbered lists, fenced code blocks,
-            **bold**, and `inline code` are converted to ADF for Jira rendering.
+            markdown (default) — headings (## / ###), bullet/numbered lists, GitHub-style pipe
+            tables, fenced code blocks, **bold**, and `inline code` are converted to ADF for Jira rendering.
             plain — single paragraph, no markdown interpretation (legacy behavior).
             adf — comment is a JSON array of ADF content nodes (see Jira REST API).
         """

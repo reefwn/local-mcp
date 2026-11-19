@@ -75,3 +75,35 @@ def test_heading_plus_bullet_list():
     doc = markdown_to_adf("## Title\n\n- a\n- b")
     types = [n["type"] for n in doc["content"]]
     assert types == ["heading", "bulletList"]
+
+
+def test_pipe_table_with_header():
+    md = """| Service | Branch |
+|---------|--------|
+| api | main |
+| web | feat/x |"""
+    doc = markdown_to_adf(md)
+    table = doc["content"][0]
+    assert table["type"] == "table"
+    rows = table["content"]
+    assert len(rows) == 3
+    assert rows[0]["content"][0]["type"] == "tableHeader"
+    assert rows[0]["content"][0]["content"][0]["content"][0]["text"] == "Service"
+    assert rows[1]["content"][0]["type"] == "tableCell"
+    assert rows[1]["content"][0]["content"][0]["content"][0]["text"] == "api"
+    assert rows[1]["content"][1]["content"][0]["content"][0]["text"] == "main"
+
+
+def test_pipe_table_inline_bold_in_cell():
+    md = "| Col |\n| --- |\n| **mkp-portal** |"
+    doc = markdown_to_adf(md)
+    cell_para = doc["content"][0]["content"][1]["content"][0]["content"][0]
+    assert cell_para["content"][0]["marks"] == [{"type": "strong"}]
+    assert cell_para["content"][0]["text"] == "mkp-portal"
+
+
+def test_pipe_table_after_heading():
+    md = "## Deploy\n\n| A | B |\n|---|---|\n| 1 | 2 |"
+    doc = markdown_to_adf(md)
+    types = [n["type"] for n in doc["content"]]
+    assert types == ["heading", "table"]
